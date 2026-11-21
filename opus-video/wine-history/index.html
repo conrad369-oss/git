@@ -63,6 +63,7 @@
     <div id="bandNew"><div class="bandText" id="bandNewText"></div></div>
   </div>
   <div id="stamp"></div>
+  <div class="a" id="uline" style="left:120px; top:660px; height:16px; background:#C8963E; width:0"></div>
   <div id="line"><div id="lineFill"></div></div>
 </div>
 <script src="lib.js"></script>
@@ -72,7 +73,7 @@ const BEAT = 0.6, NODE = 4.8, END = 60;
 const ERA = { neo: ['新石器时代', '#8A5A3B'], bronze: ['青铜时代', '#4E6B5C'], classic: ['古典时代', '#2F4F7A'],
               medieval: ['中世纪', '#5B3A6B'], modern: ['近代', '#7A1F2B'], today: ['今天', '#C8963E'] };
 const S = [
-  { v: 'glass', era: 'neo', hook: ['人类会<em>酿酒</em>，', '比会写字还早'], liq: '#8E1D2C', body: [255,255,255,.55] },
+  { v: 'glass', era: 'neo', hook: ['人类会<em>酿酒</em>，', '比会<em>写字</em>还早'], liq: '#8E1D2C', body: [255,255,255,.55] },
   { v: 'jar', era: 'neo', lab: '距今约', num: 9000, unit: '年', place: '中国 · 河南 <b>贾湖遗址</b>', title: '人类最早的酒', sub: '稻米 ＋ 蜂蜜 ＋ 野果，一起发酵',
     liq: '#E2B04A', body: [201,135,90,1], stamp: ['已知最早<br>的酒', 3.9] },
   { v: 'qvevri', era: 'neo', lab: '距今约', num: 8000, unit: '年', place: '高加索 · 今 <b>格鲁吉亚</b>', title: '葡萄酒诞生', sub: '埋进土里的大陶罐，酿出最早的葡萄酒',
@@ -236,12 +237,14 @@ window.render = function (t) {
   S.forEach((sc, j) => {
     const lt = t - sc.t0, out = j === S.length - 1 ? 0 : smooth(sc.t1 - sc.t0 - 0.38, sc.t1 - sc.t0 - 0.08, lt);
     const on = lt > -0.01 && lt < sc.t1 - sc.t0;
-    const items = sc.hook ? [[`h${j}a`, .6], [`h${j}b`, 1.8]] : [[`p${j}`, .3], [`t${j}`, .9], [`s${j}`, 1.5]];
+    const items = sc.hook ? [[`h${j}a`, .3], [`h${j}b`, 1.2]] : [[`p${j}`, .3], [`t${j}`, .9], [`s${j}`, 1.5]];
     items.forEach(([id, d]) => { const k = sp(lt - d, 'type');
       css($(id), { display: on ? 'block' : 'none', opacity: clamp((lt - d) / .15) * (1 - out),
         transform: `translate(${(1 - k) * -70}px, ${out * -36}px)` }); });
   });
 
+  // intro: gold underline sweeps under the hook on the bar line (2.4s), leaves before the morph
+  css($('uline'), { width: `${780 * easeOut(clamp((t - 2.4) / .5)) * (1 - smooth(4.3, 4.6, t))}px`, display: i === 0 ? 'block' : 'none' });
   // year counter: rolls from previous value to this scene's value
   if (i === 0) { css($('year'), { opacity: 0 }); css($('yearLabel'), { opacity: 0 }); }
   else {
