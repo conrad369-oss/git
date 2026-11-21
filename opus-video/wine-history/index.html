@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>酒的 9000 年 · 知识大赏</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root { --paper:#F3E9D7; --wine:#7A1F2B; --gold:#C8963E; --ink:#1E1A17; }
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--paper); }
+  body { font-family:"Noto Sans SC",sans-serif; color:var(--ink); }
+  #stage { position:absolute; inset:0; transform-origin:900px 560px; }
+  .grain { position:absolute; inset:0; background:
+      radial-gradient(circle at 20% 15%, rgba(200,150,62,.18), transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(122,31,43,.14), transparent 50%); }
+  .a { position:absolute; white-space:nowrap; }
+  #tag { left:120px; top:100px; font:900 30px "Noto Sans SC"; letter-spacing:.2em;
+         background:var(--ink); color:var(--paper); padding:10px 22px; }
+  #idx { right:120px; top:96px; font:900 44px "Noto Serif SC"; color:var(--wine); font-variant-numeric:tabular-nums; }
+  #yearLabel { left:128px; top:208px; font:900 34px "Noto Sans SC"; letter-spacing:.15em; color:var(--ink); }
+  #year { left:112px; top:250px; display:flex; align-items:baseline; transform-origin:0 100%; }
+  #yearNum { font:900 280px/1 "Noto Serif SC"; color:var(--wine); font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  #yearUnit { font:900 72px "Noto Sans SC"; margin-left:18px; }
+  .place { left:128px; top:590px; font:400 40px "Noto Sans SC"; letter-spacing:.08em; }
+  .place b { font-weight:900; color:var(--wine); }
+  .title { left:120px; top:656px; font:900 104px/1.1 "Noto Serif SC"; }
+  .sub { left:128px; top:820px; font:400 40px "Noto Sans SC"; }
+  .hook { left:116px; font:900 132px/1.1 "Noto Serif SC"; }
+  .hook em { font-style:normal; color:var(--wine); }
+  #card { position:absolute; left:1150px; top:180px; width:640px; height:720px; background:#FBF5EA;
+          border:3px solid var(--ink); box-shadow:18px 18px 0 var(--ink); transform-origin:50% 100%; overflow:hidden; }
+  #card svg { position:absolute; inset:0; }
+  #band, #bandNew { position:absolute; left:0; top:0; height:72px; border-bottom:3px solid var(--ink);
+                    display:flex; align-items:center; overflow:hidden; }
+  #band { width:100%; }
+  .bandText { padding-left:28px; font:900 30px "Noto Sans SC"; letter-spacing:.25em; color:#FBF5EA; white-space:nowrap; }
+  #stamp { position:absolute; left:1040px; top:640px; width:210px; height:210px; border-radius:50%;
+           border:6px solid var(--wine); color:var(--wine); display:flex; align-items:center; justify-content:center;
+           text-align:center; font:900 34px/1.25 "Noto Sans SC"; background:#F3E9D7; box-sizing:border-box; }
+  #line { position:absolute; left:120px; right:120px; top:1000px; height:4px; background:rgba(30,26,23,.15); }
+  #lineFill { position:absolute; left:0; top:0; bottom:0; background:var(--wine); }
+  .dot { position:absolute; top:-10px; width:24px; height:24px; border-radius:50%; background:var(--paper);
+         border:4px solid var(--ink); box-sizing:border-box; }
+  .dl { position:absolute; top:-50px; font:900 22px "Noto Sans SC"; transform:translateX(-50%); white-space:nowrap; }
+</style></head><body>
+<div id="stage">
+  <div class="grain"></div>
+  <div class="a" id="tag">酒的 9000 年 · 知识大赏</div>
+  <div class="a" id="idx"></div>
+  <div class="a" id="yearLabel"></div>
+  <div class="a" id="year"><span id="yearNum"></span><span id="yearUnit"></span></div>
+  <div id="texts"></div>
+  <div id="card">
+    <svg viewBox="0 0 640 720" id="svg">
+      <defs><clipPath id="vClip"><path id="vClipPath"/></clipPath>
+            <clipPath id="v2Clip"><path id="v2ClipPath"/></clipPath><clipPath id="lensClip"><circle id="lensClipC" r="104"/></clipPath></defs>
+      <g id="back"></g>
+      <path id="vBody" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round"/>
+      <g clip-path="url(#vClip)"><path id="liquid"/><g id="inLiquid"></g></g>
+      <path id="vLine" fill="none" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round"/>
+      <path id="shine" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+      <path id="v2Body" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round"/><g clip-path="url(#v2Clip)"><path id="liquid2"/></g><path id="v2Line" fill="none" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round"/>
+      <g id="front"></g>
+    </svg>
+    <div id="band"><div class="bandText" id="bandText"></div></div>
+    <div id="bandNew"><div class="bandText" id="bandNewText"></div></div>
+  </div>
+  <div id="stamp"></div>
+  <div id="line"><div id="lineFill"></div></div>
+</div>
+<script src="lib.js"></script>
+<script>
+// ---------------- timeline (100 BPM: beat 0.6s, bar 2.4s; each node = 2 bars) ----------------
+const BEAT = 0.6, NODE = 4.8, END = 60;
+const ERA = { neo: ['新石器时代', '#8A5A3B'], bronze: ['青铜时代', '#4E6B5C'], classic: ['古典时代', '#2F4F7A'],
+              medieval: ['中世纪', '#5B3A6B'], modern: ['近代', '#7A1F2B'], today: ['今天', '#C8963E'] };
+const S = [
+  { v: 'glass', era: 'neo', hook: ['人类会<em>酿酒</em>，', '比会写字还早'], liq: '#8E1D2C', body: [255,255,255,.55] },
+  { v: 'jar', era: 'neo', lab: '距今约', num: 9000, unit: '年', place: '中国 · 河南 <b>贾湖遗址</b>', title: '人类最早的酒', sub: '稻米 ＋ 蜂蜜 ＋ 野果，一起发酵',
+    liq: '#E2B04A', body: [201,135,90,1], stamp: ['已知最早<br>的酒', 3.9] },
+  { v: 'qvevri', era: 'neo', lab: '距今约', num: 8000, unit: '年', place: '高加索 · 今 <b>格鲁吉亚</b>', title: '葡萄酒诞生', sub: '埋进土里的大陶罐，酿出最早的葡萄酒',
+    liq: '#6E1F3F', body: [190,120,80,1] },
+  { v: 'egypt', era: 'bronze', lab: '距今约', num: 4500, unit: '年', place: '古埃及 · <b>吉萨</b>', title: '啤酒就是口粮', sub: '修金字塔的工人，每天按份领啤酒',
+    liq: '#E8B23A', body: [214,160,104,1] },
+  { v: 'vat', era: 'bronze', lab: '距今约', num: 3800, unit: '年', place: '美索不达米亚 · <b>苏美尔</b>', title: '写成诗的配方', sub: '《宁卡西颂》：献给啤酒女神的酿酒歌',
+    liq: '#D9A13A', body: [180,128,88,1] },
+  { v: 'gu', era: 'bronze', lab: '距今', num: 3000, unit: '多年', place: '中国 · <b>商周</b>', title: '青铜里的酒礼', sub: '觚、爵、尊——喝酒是一件庄重的事',
+    liq: '#C9A05A', body: [96,128,106,1] },
+  { v: 'kylix', era: 'classic', lab: '距今约', num: 2500, unit: '年', place: '古希腊 · <b>古罗马</b>', title: '葡萄酒要兑水', sub: '喝纯酒算野蛮，罗马把葡萄园种遍欧洲',
+    liq: '#8E1D2C', body: [200,110,60,1] },
+  { v: 'mug', era: 'medieval', lab: '距今约', num: 900, unit: '年', place: '中世纪 · 欧洲 <b>修道院</b>', title: '修士在酿酒', sub: '一边祈祷，一边改良啤酒和葡萄酒',
+    liq: '#C98A2E', body: [150,110,80,1] },
+  { v: 'flask', era: 'medieval', lab: '距今约', num: 800, unit: '年', place: '中世纪 · <b>炼金术士</b>', title: '蒸出「生命之水」', sub: '越蒸越烈，烈酒从此登场',
+    liq: '#EFE3B8', body: [255,255,255,.55] },
+  { v: 'erlen', era: 'modern', lab: '距今约', num: 160, unit: '年', place: '法国 · <b>路易·巴斯德</b>', title: '原来是微生物', sub: '他证明：发酵靠的是酵母这些小生命',
+    liq: '#E7C873', body: [255,255,255,.55] },
+  { v: 'bottle', era: 'modern', lab: '距今约', num: 100, unit: '年', place: '美国 · <b>1920—1933</b>', title: '禁酒 13 年', sub: '地下酒吧遍地开花，最后只好废除',
+    liq: '#B5651D', body: [70,110,70,.9], stamp: ['1933<br>废除', 3.6] },
+  { v: 'glass', era: 'today', lab: '', num: null, unit: '', place: '从贾湖，到你手里这一杯', title: '人类一直在干杯', sub: '理性饮酒 · 未成年人禁止饮酒',
+    liq: '#8E1D2C', body: [255,255,255,.55] },
+];
+S.forEach((s, i) => { s.t0 = i * NODE; s.t1 = i === S.length - 1 ? END : (i + 1) * NODE; });
+const sceneAt = t => Math.min(S.length - 1, Math.max(0, Math.floor(t / NODE)));
+
+// ---------------- vessel profiles: control points (y 0 bottom..1 rim, half-width w), own height h ----------------
+const VP = {
+  glass:  { h: 1.0, lo: .45, lvl: .66, p: [[0,.40],[.025,.40],[.05,.07],[.09,.035],[.36,.035],[.43,.10],[.5,.27],[.62,.38],[.76,.40],[.9,.36],[1,.33]] },
+  jar:    { h: .92, lo: 0, lvl: 0, p: [[0,.24],[.1,.46],[.28,.62],[.46,.6],[.62,.42],[.72,.18],[.82,.14],[.93,.17],[1,.24]] },
+  qvevri: { h: 1.0, lo: 0, lvl: .62, p: [[0,.03],[.1,.27],[.3,.55],[.55,.64],[.75,.52],[.87,.25],[.92,.17],[1,.21]] },
+  egypt:  { h: .98, lo: 0, lvl: .68, p: [[0,.06],[.08,.19],[.35,.40],[.6,.40],[.8,.26],[.88,.12],[.94,.12],[1,.19]] },
+  vat:    { h: .66, lo: 0, lvl: .78, p: [[0,.32],[.12,.47],[.4,.58],[.7,.62],[.9,.6],[1,.65]] },
+  gu:     { h: .98, lo: .55, lvl: .9, p: [[0,.36],[.05,.32],[.16,.19],[.34,.12],[.5,.11],[.62,.13],[.8,.28],[1,.5]] },
+  kylix:  { h: .62, lo: .55, lvl: .9, p: [[0,.34],[.04,.32],[.12,.08],[.45,.06],[.55,.16],[.7,.52],[.86,.74],[1,.82]] },
+  mug:    { h: .82, lo: 0, lvl: .8, p: [[0,.33],[.05,.35],[.5,.35],[1,.38]] },
+  flask:  { h: 1.0, lo: 0, lvl: .34, p: [[0,.05],[.08,.28],[.22,.40],[.36,.38],[.48,.22],[.55,.09],[.62,.075],[.95,.075],[1,.1]] },
+  erlen:  { h: .92, lo: 0, lvl: .34, p: [[0,.42],[.03,.44],[.55,.20],[.62,.10],[.7,.09],[.95,.09],[1,.12]] },
+  bottle: { h: 1.0, lo: 0, lvl: .5, p: [[0,.26],[.03,.27],[.55,.27],[.68,.20],[.76,.09],[.95,.08],[1,.10]] },
+};
+VP.jar.lvl = .56;
+let SC = 1; // outro shrinks both glasses
+const N = 96;
+function mono(pts) { // Fritsch–Carlson monotone cubic -> no overshoot between control points
+  const n = pts.length, x = pts.map(p => p[0]), y = pts.map(p => p[1]), d = [], m = [];
+  for (let i = 0; i < n - 1; i++) d.push((y[i + 1] - y[i]) / (x[i + 1] - x[i]));
+  m[0] = d[0]; m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : 3 * (x[i + 1] - x[i - 1]) / ((2 * x[i + 1] - x[i] - x[i - 1]) / d[i - 1] + (x[i + 1] + x[i] - 2 * x[i - 1]) / d[i]);
+  return u => { let i = 0; while (i < n - 2 && u > x[i + 1]) i++;
+    const hh = x[i + 1] - x[i], s = (u - x[i]) / hh, s2 = s * s, s3 = s2 * s;
+    return (2 * s3 - 3 * s2 + 1) * y[i] + (s3 - 2 * s2 + s) * hh * m[i] + (-2 * s3 + 3 * s2) * y[i + 1] + (s3 - s2) * hh * m[i + 1]; };
+}
+for (const k in VP) { const f = mono(VP[k].p); VP[k].w = Array.from({ length: N + 1 }, (_, i) => Math.max(.02, f(i / N))); }
+
+// ---------------- colour helpers ----------------
+const hex = s => [1, 3, 5].map(i => parseInt(s.substr(i, 2), 16)).concat(1);
+const mixc = (a, b, k) => a.map((v, i) => lerp(v, b[i], k));
+const rgba = c => `rgba(${c.slice(0, 3).map(Math.round).join(',')},${c[3].toFixed(3)})`;
+
+// ---------------- vessel geometry in card coords ----------------
+const CX = 320, BASE = 668, H = 450, WD = 300;
+function geom(t) { // blended vessel at time t: morph happens around each scene start (straddling the bar line)
+  const i = sceneAt(t), s = S[i], prev = S[Math.max(0, i - 1)];
+  let mk = i === 0 ? 1 : easeInOut((t - s.t0 + 0.45) / 0.9);
+  let A = VP[prev.v], B = VP[s.v], sa = prev, sb = s;
+  // look-ahead: the morph into the next scene starts 0.45s before its start
+  const nx = S[i + 1]; if (nx && t > nx.t0 - 0.45) { A = VP[s.v]; B = VP[nx.v]; sa = s; sb = nx; mk = easeInOut((t - nx.t0 + 0.45) / 0.9); }
+  return { w: A.w.map((v, j) => lerp(v, B.w[j], mk)), h: lerp(A.h, B.h, mk), lo: lerp(A.lo, B.lo, mk), lvl: lerp(A.lvl, B.lvl, mk),
+           body: mixc(sa.body, sb.body, mk), liq: mixc(hex(sa.liq), hex(sb.liq), mk), from: sa, to: sb, mk };
+}
+function vpath(g, cx, base, sc = SC) {
+  let d = `M${cx},${base}`;
+  for (let j = 0; j <= N; j++) d += `L${(cx + g.w[j] * WD * sc).toFixed(1)},${(base - j / N * g.h * H * sc).toFixed(1)}`;
+  for (let j = N; j >= 0; j--) d += `L${(cx - g.w[j] * WD * sc).toFixed(1)},${(base - j / N * g.h * H * sc).toFixed(1)}`;
+  return d + 'Z';
+}
+const wAt = (g, y) => g.w[Math.round(clamp(y) * N)] * WD * SC;      // half-width (px) at normalised height
+const yAt = (g, y) => BASE - y * g.h * H * SC;                         // card y at normalised height
+
+// ---------------- build static DOM: per-scene text groups, timeline ----------------
+S.forEach((s, i) => {
+  const html = s.hook
+    ? `<div class="a hook" id="h${i}a" style="top:330px">${s.hook[0]}</div><div class="a hook" id="h${i}b" style="top:500px">${s.hook[1]}</div>`
+    : `<div class="a place" id="p${i}">${s.place}</div><div class="a title" id="t${i}">${s.title}</div><div class="a sub" id="s${i}">${s.sub}</div>`;
+  $('texts').insertAdjacentHTML('beforeend', html);
+});
+const NODES = ['贾湖', '格鲁吉亚', '埃及', '苏美尔', '商周', '希腊·罗马', '修道院', '蒸馏', '巴斯德', '禁酒令'];
+NODES.forEach((n, i) => { const x = i / 9 * 100;
+  $('line').insertAdjacentHTML('beforeend', `<div class="dot" id="d${i}" style="left:calc(${x}% - 12px)"></div><div class="dl" id="dl${i}" style="left:${x}%">${n}</div>`); });
+
+// ---------------- props (SVG, per scene) ----------------
+const NS = 'http://www.w3.org/2000/svg';
+function el(parent, tag, attrs) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); $(parent).appendChild(e); return e; }
+const at = (e, o) => { for (const k in o) e.setAttribute(k, o[k]); };
+// scene 1: ingredients + bubbles
+const ING = [{ t: 1.2, c: '#F6F0DC', r: 15, n: 7, label: '稻米' }, { t: 2.4, c: '#E8A93A', r: 24, n: 2, label: '蜂蜜' }, { t: 3.0, c: '#B8302F', r: 19, n: 4, label: '野果' }];
+ING.forEach((g, j) => { g.els = []; for (let k = 0; k < g.n; k++) g.els.push(el('front', 'circle', { r: g.r, fill: g.c, stroke: '#1E1A17', 'stroke-width': 4 }));
+  g.lab = el('front', 'text', { 'font-family': 'Noto Sans SC', 'font-weight': 900, 'font-size': 34, fill: '#1E1A17', 'text-anchor': 'middle' }); g.lab.textContent = g.label; });
+const BUB = Array.from({ length: 16 }, (_, i) => el('back', 'circle', { r: 6 + rnd(i) * 8, fill: 'none', stroke: '#1E1A17', 'stroke-width': 3 }));
+// scene 2: soil + grapes
+const soil = el('front', 'path', { fill: '#8A5A3B', stroke: '#1E1A17', 'stroke-width': 5 });
+const GR = Array.from({ length: 7 }, () => el('front', 'circle', { r: 17, fill: '#5B2A6B', stroke: '#1E1A17', 'stroke-width': 4 }));
+// scene 3: pyramids + sun (line art, drawn on)
+const sun = el('back', 'circle', { cx: 500, cy: 200, r: 46, fill: '#F2C46A', stroke: '#1E1A17', 'stroke-width': 4 });
+const PYR = [ 'M20,560 L190,300 L360,560', 'M300,560 L430,370 L560,560', 'M190,300 L230,560' ].map(d => el('back', 'path', { d, fill: 'none', stroke: '#C8963E', 'stroke-width': 6, 'stroke-linejoin': 'round' }));
+// scene 4: straws + clay tablet with cuneiform
+const STRAW = [0, 1].map(() => el('front', 'line', { stroke: '#B8902F', 'stroke-width': 9, 'stroke-linecap': 'round' }));
+const tablet = el('front', 'rect', { x: 40, y: 110, width: 170, height: 200, rx: 18, fill: '#C9A27A', stroke: '#1E1A17', 'stroke-width': 5 });
+const WEDGE = Array.from({ length: 12 }, (_, i) => el('front', 'path', { fill: '#1E1A17' }));
+// scene 5: bronze bands (taotie-ish zigzag) on the gu
+const BAND = [0, 1].map(() => el('front', 'path', { fill: 'none', stroke: '#E0C27A', 'stroke-width': 5, 'stroke-linejoin': 'round' }));
+// scene 6: water stream
+const water = el('front', 'path', { fill: '#7FB3D5', stroke: '#1E1A17', 'stroke-width': 4 });
+const jug = el('front', 'path', { d: 'M90,96 L176,96 L196,130 L176,176 L90,176 Z', fill: '#7FB3D5', stroke: '#1E1A17', 'stroke-width': 5 });
+// scene 7: mug handle + foam
+const handle = el('back', 'path', { fill: 'none', stroke: '#1E1A17', 'stroke-width': 26, 'stroke-linecap': 'round' });
+const handleIn = el('back', 'path', { fill: 'none', stroke: '#967050', 'stroke-width': 14, 'stroke-linecap': 'round' });
+const FOAM = Array.from({ length: 9 }, () => el('front', 'circle', { fill: '#FFF6E0', stroke: '#1E1A17', 'stroke-width': 4 }));
+// scene 8: flame, steam, drops
+const flame = el('back', 'path', { fill: '#F08A24', stroke: '#1E1A17', 'stroke-width': 4 });
+const flameIn = el('back', 'path', { fill: '#FFD45A' });
+const STEAM = Array.from({ length: 5 }, () => el('front', 'circle', { fill: 'none', stroke: '#1E1A17', 'stroke-width': 4 }));
+// scene 9: magnifier with budding yeast
+const lensG = el('front', 'g', {});
+const lensBg = document.createElementNS(NS, 'circle'); at(lensBg, { r: 104, fill: '#FFF8E6' }); lensG.appendChild(lensBg);
+const yeastG = document.createElementNS(NS, 'g'); yeastG.setAttribute('clip-path', 'url(#lensClip)'); lensG.appendChild(yeastG);
+const YEAST = Array.from({ length: 7 }, () => { const a = document.createElementNS(NS, 'ellipse'), b = document.createElementNS(NS, 'ellipse');
+  at(a, { fill: '#E7C873', stroke: '#1E1A17', 'stroke-width': 4 }); at(b, { fill: '#E7C873', stroke: '#1E1A17', 'stroke-width': 4 }); yeastG.appendChild(a); yeastG.appendChild(b); return [a, b]; });
+const lensRim = document.createElementNS(NS, 'circle'); at(lensRim, { r: 104, fill: 'none', stroke: '#1E1A17', 'stroke-width': 12 }); lensG.appendChild(lensRim);
+const lensHandle = document.createElementNS(NS, 'line'); at(lensHandle, { x1: 74, y1: 74, x2: 160, y2: 160, stroke: '#1E1A17', 'stroke-width': 22, 'stroke-linecap': 'round' }); lensG.appendChild(lensHandle);
+// scene 10: ban sign (two halves so it can break)
+const banG = [0, 1].map(() => el('front', 'g', {}));
+banG.forEach((g, k) => { const c = document.createElementNS(NS, 'path');
+  at(c, { d: k ? 'M0,-170 A170,170 0 0 1 0,170' : 'M0,170 A170,170 0 0 1 0,-170', fill: 'none', stroke: '#C0272D', 'stroke-width': 30 }); g.appendChild(c);
+  const s = document.createElementNS(NS, 'line'); at(s, k ? { x1: 0, y1: 0, x2: 120, y2: 120 } : { x1: -120, y1: -120, x2: 0, y2: 0 });
+  at(s, { stroke: '#C0272D', 'stroke-width': 30 }); g.appendChild(s); });
+// outro: sparkle at the clink
+const SPARK = Array.from({ length: 8 }, () => el('front', 'line', { stroke: '#C8963E', 'stroke-width': 7, 'stroke-linecap': 'round' }));
+
+// visibility of a scene's props: in after its start, out just before the next morph
+const vis = (t, i, a = 0.2) => { const s = S[i]; return clamp((t - s.t0 - a) / 0.25) * (1 - clamp((t - (s.t1 - 0.5)) / 0.25)); };
+const hide = (...es) => es.forEach(e => e.setAttribute('opacity', 0));
+
+// ---------------- render ----------------
+window.render = function (t) {
+  t = clamp(t, 0, END - 1e-3);
+  const i = sceneAt(t), s = S[i], tau = t - s.t0;
+
+  // camera: slow breathing push for the whole film + small kick at each scene change
+  const kick = i > 0 ? Math.exp(-tau * 5) * Math.sin(tau * 14) * (tau < 1.2 ? 1 : 0) : 0;
+  css($('stage'), { transform: `scale(${1.01 + 0.025 * (t / END) + 0.008 * Math.sin(t * 2 * Math.PI / 9.6)})` });
+
+  // tag + index
+  const tk = sp(t - 0.2, 'type');
+  css($('tag'), { opacity: clamp((t - .2) * 6), transform: `translateY(${(1 - tk) * -40}px)` });
+  const node = i >= 1 && i <= 10;
+  $('idx').textContent = node ? `${String(i).padStart(2, '0')} / 10` : '';
+  css($('idx'), { opacity: node ? clamp(tau * 5) : 0 });
+
+  // per-scene text: in on springs, out upwards at the end of the scene (never overlapping the next)
+  S.forEach((sc, j) => {
+    const lt = t - sc.t0, out = j === S.length - 1 ? 0 : smooth(sc.t1 - sc.t0 - 0.38, sc.t1 - sc.t0 - 0.08, lt);
+    const on = lt > -0.01 && lt < sc.t1 - sc.t0;
+    const items = sc.hook ? [[`h${j}a`, .6], [`h${j}b`, 1.8]] : [[`p${j}`, .3], [`t${j}`, .9], [`s${j}`, 1.5]];
+    items.forEach(([id, d]) => { const k = sp(lt - d, 'type');
+      css($(id), { display: on ? 'block' : 'none', opacity: clamp((lt - d) / .15) * (1 - out),
+        transform: `translate(${(1 - k) * -70}px, ${out * -36}px)` }); });
+  });
+
+  // year counter: rolls from previous value to this scene's value
+  if (i === 0) { css($('year'), { opacity: 0 }); css($('yearLabel'), { opacity: 0 }); }
+  else {
+    const prevNum = i === 1 ? 0 : S[i - 1].num, roll = easeOut(clamp(tau / 1.1));
+    if (s.num !== null) $('yearNum').textContent = String(Math.round(lerp(prevNum, s.num, roll)));
+    else $('yearNum').textContent = tau < 0.7 ? String(Math.round(lerp(prevNum, 0, easeOut(tau / 0.7)))) : '今天';
+    const rolling0 = s.num === null && tau < 0.7;
+    $('yearUnit').textContent = s.num === null ? (rolling0 ? '年' : '') : s.unit;
+    $('yearLabel').textContent = rolling0 ? S[i - 1].lab : s.lab;
+    const yk = i === 1 ? sp(tau, 'type') : 1, pop = s.num === null ? sp(tau - 0.7, 'toy') : 1;
+    css($('year'), { opacity: clamp(tau / .15) + (i > 1 ? 1 : 0), transform: `translateY(${(1 - yk) * 80}px) scale(${s.num === null && tau >= .7 ? .7 + .3 * pop : 1})` });
+    const sameLab = i > 1 && S[i - 1].lab === s.lab;
+    css($('yearLabel'), { opacity: sameLab || (s.num === null && tau < 0.7) ? 1 : (s.num === null ? 0 : clamp((tau - .1) / .2)) });
+  }
+
+  // card: enters in intro, kicks at each change
+  const ck = sp(t - 0.3, 'card');
+  css($('card'), { transform: `translateY(${(1 - ck) * 560}px) rotate(${(1 - ck) * 8 - 2 + kick * 1.6}deg) scale(${1 + kick * 0.02})` });
+  // era band: new colour wipes in from the left when the era changes
+  const prevEra = S[Math.max(0, i - 1)].era, curEra = s.era, eraChanged = i > 0 && prevEra !== curEra;
+  const wipe = eraChanged ? easeInOut(tau / 0.6) : 1;
+  $('band').style.background = ERA[eraChanged ? prevEra : curEra][1]; $('bandText').textContent = ERA[eraChanged ? prevEra : curEra][0];
+  $('bandNew').style.background = ERA[curEra][1]; $('bandNewText').textContent = ERA[curEra][0];
+  css($('bandNew'), { width: `${wipe * 100}%`, display: eraChanged ? 'flex' : 'none' });
+
+  // vessel
+  const g = geom(t);
+  let cx = CX, rot = 0;
+  const slide = i === 11 ? sp(tau - 0.9, 'card') : 0, hit = i === 11 ? smooth(2.15, 2.4, tau) * (1 - smooth(2.4, 2.9, tau)) : 0;
+  SC = lerp(1, .85, slide);
+  if (i === 11) { cx = CX - 128 * slide; rot = 1.2 * slide + 2.2 * hit; }
+  const d = vpath(g, cx, BASE);
+  at($('vBody'), { d, fill: rgba(g.body) }); at($('vLine'), { d }); at($('vClipPath'), { d });
+  $('vBody').setAttribute('transform', `rotate(${rot} ${cx} ${BASE})`); $('vLine').setAttribute('transform', `rotate(${rot} ${cx} ${BASE})`);
+  $('vClipPath').setAttribute('transform', `rotate(${rot} ${cx} ${BASE})`);
+  // liquid: fill level per scene (+ scene-specific rises), wavy surface
+  let lvl = g.lvl, amp = 6;
+  if (i === 1) lvl = .08 + .16 * spring(tau - 1.6, 10, .7) + .16 * spring(tau - 2.8, 10, .7) + .16 * spring(tau - 3.4, 10, .7);
+  if (i === 0) { amp = 10; if (g.to.v === 'jar') lvl = lerp(.66, .08, g.mk); }
+  const ly = yAt(g, lvl), lyLo = yAt(g, g.lo) + (g.lo > 0 ? 0 : 20);
+  let lp = `M${cx - 330},${lyLo}`;
+  for (let x = -330; x <= 330; x += 10) lp += `L${cx + x},${(ly + Math.sin(x / 38 + t * 3.2) * amp).toFixed(1)}`;
+  lp += `L${cx + 330},${lyLo}Z`;
+  let liq = g.liq;
+  if (i === 6) liq = mixc(hex('#8E1D2C'), hex('#C8566A'), smooth(1.4, 3.2, tau));
+  at($('liquid'), { d: lp, fill: rgba(liq), transform: `rotate(${rot} ${cx} ${BASE})` });
+  // shine on the left flank
+  const sh = [.25, .6].map(y => [cx - wAt(g, y) * .62, yAt(g, y)]);
+  at($('shine'), { d: `M${sh[0][0]},${sh[0][1]} L${sh[1][0]},${sh[1][1]}`, transform: `rotate(${rot} ${cx} ${BASE})`,
+    opacity: g.body[3] < 1 ? .7 : .35 });
+
+  // ---------- props ----------
+  // scene 1
+  ING.forEach((gg, j) => { gg.els.forEach((e, k) => { const lt = tau - gg.t - k * .05, f = clamp(lt / .45);
+      at(e, { cx: CX + (rnd(j * 9 + k) - .5) * 60, cy: lerp(60, yAt(g, .85), f * f), opacity: i === 1 && lt > 0 && f < 1 ? 1 : 0 }); });
+    const lk = sp(tau - gg.t - .3, 'toy');
+    at(gg.lab, { x: [130, 320, 510][j], y: 160 - lk * 30, opacity: i === 1 ? clamp((tau - gg.t - .3) * 6) * vis(t, 1) : 0 }); });
+  BUB.forEach((b, k) => { const per = 1.2 + rnd(k + 3) * .8, ph = ((tau - 1.6) / per + rnd(k + 7)) % 1;
+    const on = (i === 1 && tau > 1.6 + rnd(k) * 1.5) || (i === 2 && tau > 1.4) || i === 9;
+    const top = yAt(g, 1);
+    at(b, { cx: CX + (rnd(k + 1) - .5) * 140 + Math.sin(t * 3 + k) * 10, cy: top - 10 - ph * 150, opacity: on ? (1 - ph) * (i === 9 ? 0 : 1) * vis(t, i) : 0 }); });
+  // scene 2: soil rises to bury the lower half; grapes drop
+  { const v = i === 2 ? vis(t, 2, 0) : 0, k = sp(tau - .4, 'card'), sy = lerp(720, BASE - .42 * H, k);
+    let dd = `M-10,730 L-10,${sy}`; for (let x = 0; x <= 650; x += 40) dd += ` Q${x + 20},${sy - 14 + rnd(x) * 6} ${x + 40},${sy}`;
+    at(soil, { d: dd + ' L650,730 Z', opacity: v });
+    GR.forEach((e, k2) => { const lt = tau - 1.2 - k2 * .3, f = clamp(lt / .5);
+      at(e, { cx: CX + (rnd(k2 + 40) - .5) * 50, cy: lerp(60, yAt(g, .9), f * f), opacity: i === 2 && lt > 0 && f < 1 ? 1 : 0 }); }); }
+  // scene 3: pyramids draw on
+  { const v = i === 3 ? vis(t, 3) : 0;
+    PYR.forEach((p, k) => { const len = 700, f = easeInOut((tau - .4 - k * .5) / 1.2);
+      at(p, { 'stroke-dasharray': len, 'stroke-dashoffset': len * (1 - f), opacity: v }); });
+    at(sun, { opacity: v, cy: 220 - 40 * sp(tau - .3, 'type') }); }
+  // scene 4: straws slide in, cuneiform wedges are pressed one per half-beat
+  { const v = i === 4 ? vis(t, 4) : 0, top = yAt(g, .95);
+    STRAW.forEach((e, k) => { const f = sp(tau - 1.2 - k * .6, 'card');
+      at(e, { x1: CX + (k ? 70 : 10), y1: top + 60, x2: CX + (k ? 70 : 10) + (k ? 190 : 110) * f, y2: top + 60 - (k ? 250 : 300) * f, opacity: v }); });
+    at(tablet, { opacity: v, transform: `rotate(-8 125 210)` });
+    WEDGE.forEach((e, k) => { const x = 66 + (k % 4) * 36, y = 140 + Math.floor(k / 4) * 54, on = tau > 1.8 + k * .15;
+      at(e, { d: `M${x},${y} l20,0 l-10,30 Z`, opacity: on ? v : 0, transform: `rotate(-8 125 210)` }); }); }
+  // scene 5: bronze bands draw across the gu
+  { const v = i === 5 ? vis(t, 5) : 0;
+    BAND.forEach((e, k) => { const y0 = [.42, .7][k], y1 = y0 + .06, f = easeInOut((tau - 1.2 - k * .6) / 1.0);
+      const wl = wAt(g, y0 + .03) * .92; let dd = `M${CX - wl},${yAt(g, y0)}`; const seg = 8;
+      for (let q = 0; q <= seg; q++) { const x = CX - wl + (2 * wl) * q / seg; dd += ` L${x},${yAt(g, q % 2 ? y1 : y0)}`; }
+      at(e, { d: dd, 'stroke-dasharray': 900, 'stroke-dashoffset': 900 * (1 - f), opacity: v }); }); }
+  // scene 6: jug tilts in and pours a water stream into the kylix
+  { const v = i === 6 ? vis(t, 6) : 0, pour = smooth(1.2, 1.5, tau) * (1 - smooth(3.0, 3.3, tau));
+    const surf = yAt(g, g.lvl), wob = Math.sin(t * 9) * 3, wd = 9 * pour;
+    at(water, { d: `M${200 - wd},140 C${230},170 ${CX - 20 + wob},${surf - 120} ${CX - 10 + wob - wd},${surf} L${CX - 10 + wob + wd},${surf} C${CX + wob},${surf - 120} ${240},170 ${200 + wd},140 Z`, opacity: v * (pour > .02 ? 1 : 0) });
+    const tilt = 34 * sp(tau - .8, 'card'); at(jug, { opacity: v, transform: `rotate(${tilt} 140 136)` }); }
+  // scene 7: handle grows, foam bubbles up over the rim
+  { const v = i === 7 ? vis(t, 7, 0.1) : 0, hk = sp(tau - .2, 'toy'), rx = CX + wAt(g, .5) - 6, top = yAt(g, .82), bot = yAt(g, .22);
+    const hd = `M${rx},${top} C${rx + 140 * hk},${top} ${rx + 140 * hk},${bot} ${rx},${bot}`;
+    at(handle, { d: hd, opacity: v }); at(handleIn, { d: hd, opacity: v });
+    FOAM.forEach((e, k) => { const f = sp(tau - 1.2 - k * .08, 'toy'), x = CX + (k / 8 - .5) * 2 * wAt(g, 1) * .95;
+      at(e, { cx: x, cy: yAt(g, 1) + 6 - 18 * f + Math.sin(t * 2 + k) * 3, r: (20 + rnd(k + 70) * 14) * f, opacity: v }); }); }
+  // scene 8: flickering flame (12 fps), steam puffs from the neck
+  { const v = i === 8 ? vis(t, 8) : 0, fq = Math.floor(t * 12), fh = 54 + rnd(fq) * 16, fw = 46 + rnd(fq + 1) * 8, by = BASE + 46;
+    const fk = sp(tau - .5, 'toy');
+    at(flame, { d: `M${CX - fw},${by} Q${CX - fw},${by - fh * .6} ${CX},${by - fh * fk} Q${CX + fw},${by - fh * .6} ${CX + fw},${by} Z`, opacity: v });
+    at(flameIn, { d: `M${CX - fw * .5},${by} Q${CX - fw * .4},${by - fh * .4} ${CX},${by - fh * .6 * fk} Q${CX + fw * .4},${by - fh * .4} ${CX + fw * .5},${by} Z`, opacity: v });
+    STEAM.forEach((e, k) => { const ph = ((tau - 1.4) / 1.6 + k / 5) % 1, on = tau > 1.4 + k * .2;
+      at(e, { cx: CX + Math.sin(ph * 6 + k) * 18, cy: yAt(g, 1) - 20 - ph * 120, r: 10 + ph * 22, opacity: on ? v * (1 - ph) : 0 }); }); }
+  // scene 9: magnifier glides over the flask revealing budding yeast
+  { const v = i === 9 ? vis(t, 9) : 0, f = easeInOut((tau - .8) / 1.8);
+    const lx = lerp(150, 380, f), lyy = lerp(250, 470, f) + Math.sin(tau * 2) * 8;
+    at(lensG, { transform: `translate(${lx},${lyy})`, opacity: v }); at($('lensClipC'), { cx: 0, cy: 0 });
+    YEAST.forEach(([a, b], k) => { const x = (rnd(k + 90) - .5) * 150, y = (rnd(k + 95) - .5) * 150, bud = sp(tau - 1.6 - k * .25, 'toy');
+      at(a, { cx: x, cy: y, rx: 22, ry: 17 }); at(b, { cx: x + 24 * bud, cy: y - 14 * bud, rx: 12 * bud + .01, ry: 10 * bud + .01 }); }); }
+  // scene 10: ban sign slams on, breaks when repeal stamp lands
+  { const v = i === 10 ? vis(t, 10, 1.1) : 0, k = sp(tau - 1.2, 'toy'), br = clamp((tau - 3.7) / .6), cyb = yAt(g, .45);
+    banG.forEach((e, q) => { const dir = q ? 1 : -1;
+      at(e, { transform: `translate(${CX + dir * 160 * br},${cyb + 220 * br * br}) rotate(${dir * 30 * br}) scale(${.4 + .6 * k})`, opacity: v * (1 - br) }); }); }
+  // outro: second glass slides in from the right and clinks on the downbeat (t = 55.2)
+  if (i === 11) { const cx2 = lerp(900, CX + 128, slide), rot2 = -1.2 * slide - 2.2 * hit, d2 = vpath(VP.glass, cx2, BASE), tr2 = `rotate(${rot2} ${cx2} ${BASE})`;
+    at($('v2Body'), { d: d2, fill: 'rgba(255,255,255,.55)', transform: tr2, opacity: 1 }); at($('v2Line'), { d: d2, transform: tr2, opacity: 1 });
+    at($('v2ClipPath'), { d: d2, transform: tr2 });
+    const l2 = BASE - .66 * H * SC, lo2 = BASE - .45 * H * SC; let q = `M${cx2 - 200},${lo2}`;
+    for (let x = -200; x <= 200; x += 10) q += `L${cx2 + x},${(l2 + Math.sin(x / 38 + t * 3.2 + 1) * 6).toFixed(1)}`;
+    at($('liquid2'), { d: q + `L${cx2 + 200},${lo2}Z`, fill: '#8E1D2C', transform: tr2, opacity: 1 });
+    SPARK.forEach((e, k) => { const a = k / 8 * Math.PI * 2, f = easeOut(clamp((tau - 2.4) / .5)), r0 = 30 + 60 * f, r1 = r0 + 40 * (1 - f);
+      at(e, { x1: CX + Math.cos(a) * r0, y1: 330 + Math.sin(a) * r0, x2: CX + Math.cos(a) * r1, y2: 330 + Math.sin(a) * r1, opacity: tau > 2.4 ? 1 - f : 0 }); });
+  } else { at($('v2Body'), { opacity: 0 }); at($('v2Line'), { opacity: 0 }); at($('liquid2'), { opacity: 0 }); SPARK.forEach(e => at(e, { opacity: 0 })); }
+
+  // stamp
+  const st = s.stamp; if (st) { $('stamp').innerHTML = st[0]; }
+  const sk = st ? sp(tau - st[1], 'toy') : 0;
+  css($('stamp'), { opacity: st ? clamp((tau - st[1]) * 8) * (1 - smooth(4.4, 4.7, tau)) : 0, transform: `scale(${.3 + .7 * sk}) rotate(${-14 + (1 - sk) * 30}deg)` });
+
+  // timeline: progress to the current node, passed dots filled, current dot pops
+  const target = i === 0 ? 0 : i >= 11 ? 1 : (i - 1) / 9, prevT = i <= 1 ? 0 : i >= 11 ? 1 : (i - 2) / 9;
+  const pk = i === 0 ? 0 : sp(tau, 'ui');
+  css($('lineFill'), { width: `${lerp(prevT, target, pk) * 100}%` });
+  NODES.forEach((n, k) => { const passed = i >= 11 || k < i - 1, cur = k === i - 1, pop = cur ? sp(tau - .1, 'toy') : 0;
+    css($('d' + k), { background: cur ? '#7A1F2B' : passed ? '#1E1A17' : '#F3E9D7', transform: `scale(${1 + (cur ? .45 * pop : 0)})` });
+    css($('dl' + k), { color: cur ? '#7A1F2B' : '#1E1A17', opacity: cur || passed ? 1 : .45 }); });
+};
+boot(['900 40px "Noto Serif SC"', '900 40px "Noto Sans SC"', '400 40px "Noto Sans SC"'], document.body.innerText + '0123456789今天年多距约');
+</script></body></html>
