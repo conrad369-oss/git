@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+  :root { --paper:#F3E9D7; --wine:#7A1F2B; --gold:#C8963E; --ink:#1E1A17; }
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--paper); }
+  body { font-family:"Noto Sans SC",sans-serif; color:var(--ink); }
+  #stage { position:absolute; inset:0; transform-origin:960px 540px; }
+  .grain { position:absolute; inset:0; background:
+      radial-gradient(circle at 20% 15%, rgba(200,150,62,.18), transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(122,31,43,.14), transparent 50%); }
+  .rule { position:absolute; left:120px; right:120px; height:2px; background:var(--ink); }
+  #tag { position:absolute; left:120px; top:110px; font:900 30px "Noto Sans SC"; letter-spacing:.2em;
+         background:var(--ink); color:var(--paper); padding:10px 22px; }
+  #idx { position:absolute; right:120px; top:104px; font:900 44px "Noto Serif SC"; color:var(--wine); }
+  #year { position:absolute; left:112px; top:210px; font:900 300px/1 "Noto Serif SC"; color:var(--wine);
+          font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  #yearUnit { position:absolute; left:128px; top:525px; font:900 64px "Noto Sans SC"; }
+  #place { position:absolute; left:128px; top:620px; font:400 40px "Noto Sans SC"; letter-spacing:.08em; }
+  #place b { font-weight:900; color:var(--wine); }
+  #title { position:absolute; left:120px; top:700px; font:900 104px/1.1 "Noto Serif SC"; white-space:nowrap; }
+  #sub { position:absolute; left:128px; top:850px; font:400 40px "Noto Sans SC"; }
+  #card { position:absolute; left:1150px; top:180px; width:640px; height:720px; background:#FBF5EA;
+          border:3px solid var(--ink); box-shadow:18px 18px 0 var(--ink); transform-origin:50% 100%; }
+  #card svg { position:absolute; inset:0; }
+  #stamp { position:absolute; left:1040px; top:640px; width:210px; height:210px; border-radius:50%;
+           border:6px solid var(--wine); color:var(--wine); display:flex; align-items:center; justify-content:center;
+           text-align:center; font:900 34px/1.25 "Noto Sans SC"; transform-origin:50% 50%; background:#F3E9D7; }
+  #line { position:absolute; left:120px; right:120px; top:1000px; height:4px; background:rgba(30,26,23,.15); }
+  #lineFill { position:absolute; left:0; top:0; bottom:0; background:var(--wine); }
+  .dot { position:absolute; top:-10px; width:24px; height:24px; border-radius:50%; background:var(--paper);
+         border:4px solid var(--ink); box-sizing:border-box; }
+  .dl { position:absolute; top:-50px; font:900 22px "Noto Sans SC"; transform:translateX(-40%); white-space:nowrap; }
+</style></head><body>
+<div id="stage">
+  <div class="grain"></div>
+  <div id="tag">酒的 9000 年 · 知识大赏</div>
+  <div id="idx">01 / 10</div>
+  <div id="year">9000</div>
+  <div id="yearUnit">年前</div>
+  <div id="place">中国 · 河南 <b>贾湖遗址</b></div>
+  <div id="title">人类最早的酒</div>
+  <div id="sub">稻米 ＋ 蜂蜜 ＋ 野果，一起发酵</div>
+  <div id="card"><svg viewBox="0 0 640 720" id="svg">
+    <defs><clipPath id="jarClip"><path id="jarPathC"/></clipPath></defs>
+    <g id="bubbles"></g>
+    <path id="jarPath" fill="#C9875A" stroke="#1E1A17" stroke-width="6"/>
+    <g clip-path="url(#jarClip)"><rect id="liquid" x="0" width="640" height="720" fill="#E6B54A" opacity=".55"/></g>
+    <path id="jarDeco" fill="none" stroke="#1E1A17" stroke-width="5" stroke-linecap="round"/>
+    <g id="ing"></g>
+  </svg></div>
+  <div id="stamp">已知最早<br>的酒</div>
+  <div id="line"><div id="lineFill"></div></div>
+</div>
+<script src="../lib.js"></script>
+<script>
+// jar silhouette (wide belly, narrow neck)
+const JAR = "M250,250 C250,215 390,215 390,250 L380,300 C520,350 540,520 470,600 C430,650 210,650 170,600 C100,520 120,350 260,300 Z";
+$('jarPath').setAttribute('d', JAR); $('jarPathC').setAttribute('d', JAR);
+$('jarDeco').setAttribute('d', "M175,430 Q320,470 465,430 M190,480 Q320,520 450,480");
+const NODES = ['贾湖','格鲁吉亚','埃及','苏美尔','商周','希腊·罗马','修道院','蒸馏','巴斯德','禁酒令'];
+NODES.forEach((n, i) => { const x = i / 9 * 100;
+  $('line').insertAdjacentHTML('beforeend', `<div class="dot" style="left:calc(${x}% - 12px)"></div><div class="dl" style="left:${x}%">${n}</div>`); });
+// ingredients drop every other beat (100 BPM -> 0.6s/beat)
+const ING = [ {t:1.2, c:'#F6F0DC', r:16, n:7, label:'稻米'}, {t:2.4, c:'#E8A93A', r:26, n:1, label:'蜂蜜'}, {t:3.6, c:'#B8302F', r:20, n:4, label:'野果'} ];
+let bubHTML = ''; for (let i = 0; i < 14; i++) bubHTML += `<circle id="b${i}" r="${6 + rnd(i) * 8}" fill="none" stroke="#1E1A17" stroke-width="3"/>`;
+$('bubbles').innerHTML = bubHTML;
+let ingHTML = ''; ING.forEach((g, j) => { for (let k = 0; k < g.n; k++) ingHTML += `<circle id="i${j}_${k}" r="${g.r}" fill="${g.c}" stroke="#1E1A17" stroke-width="4"/>`;
+  ingHTML += `<text id="il${j}" font-family="Noto Sans SC" font-weight="900" font-size="34" fill="#1E1A17" text-anchor="middle">${g.label}</text>`; });
+$('ing').innerHTML = ingHTML;
+
+window.render = function (t) {
+  // camera: slow push-in all shot
+  css($('stage'), { transform: `scale(${1 + 0.035 * easeInOut(t / 4.8)})` });
+  const y = Math.round(9000 * easeOut(clamp(t / 1.2)));
+  $('year').textContent = String(y);
+  const yk = sp(t - 0.0, 'type');
+  css($('year'), { transform: `translateY(${(1 - yk) * 80}px)`, opacity: clamp(t / 0.15) });
+  [['yearUnit', .3], ['place', .6], ['title', .9], ['sub', 1.4]].forEach(([id, d]) => {
+    const k = sp(t - d, 'type'); css($(id), { opacity: clamp((t - d) / .15), transform: `translateX(${(1 - k) * -60}px)` }); });
+  const ck = sp(t - 0.2, 'card');
+  css($('card'), { transform: `translateY(${(1 - ck) * 500}px) rotate(${(1 - ck) * 8 - 2}deg)` });
+  const sk = sp(t - 4.2, 'toy');
+  css($('stamp'), { opacity: clamp((t - 4.2) * 8), transform: `scale(${0.3 + 0.7 * sk}) rotate(${-14 + (1 - sk) * 30}deg)` });
+  // ingredients fall into jar mouth then vanish; labels pop beside
+  ING.forEach((g, j) => { for (let k = 0; k < g.n; k++) {
+      const el = $(`i${j}_${k}`), lt = t - g.t - k * 0.04;
+      const fall = clamp(lt / 0.45), x = 320 + (rnd(j * 9 + k) - .5) * 60, y0 = -40, y1 = 300;
+      el.setAttribute('cx', x); el.setAttribute('cy', lerp(y0, y1, fall * fall));
+      el.setAttribute('opacity', lt < 0 || fall >= 1 ? 0 : 1); }
+    const lab = $(`il${j}`), lk = sp(t - g.t - .3, 'toy');
+    lab.setAttribute('x', [130, 320, 510][j]); lab.setAttribute('y', 150 - lk * 30);
+    lab.setAttribute('opacity', clamp((t - g.t - .3) * 6)); });
+  // liquid rises with each ingredient, wobbles
+  const lvl = 0.25 * spring(t - 1.55, 10, .7) + 0.25 * spring(t - 2.75, 10, .7) + 0.25 * spring(t - 3.95, 10, .7);
+  $('liquid').setAttribute('y', 650 - lvl * 360);
+  // fermentation bubbles after 2.4s, seeded & time-only
+  for (let i = 0; i < 14; i++) { const b = $(`b${i}`), per = 1.2 + rnd(i + 3) * .8;
+    const ph = ((t - 1.6) / per + rnd(i + 7)) % 1, on = t > 1.6 + rnd(i) * 1.5;
+    b.setAttribute('cx', 220 + rnd(i + 1) * 200 + Math.sin(t * 3 + i) * 10);
+    b.setAttribute('cy', 260 - ph * 220); b.setAttribute('opacity', on ? (1 - ph) : 0); }
+  css($('lineFill'), { width: `${2 * smooth(0, 1.5, t)}%` });
+};
+boot(['900 40px "Noto Serif SC"', '900 40px "Noto Sans SC"', '400 40px "Noto Sans SC"'], document.body.innerText);
+</script></body></html>

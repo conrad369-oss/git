@@ -1,0 +1,4 @@
+file: previews/plan-c.mp4
+duration: 4.80s  size: 1920x1080  fps: 30.00  audio: no
+contact sheet: previews/plan-c-sheet.png (5x4, one cell every 0.24s)
+shot changes (0): none detected

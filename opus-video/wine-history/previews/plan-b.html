@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#000; }
+  canvas { position:absolute; left:0; top:0; width:1920px; height:1080px; image-rendering:pixelated; }
+</style></head><body>
+<canvas id="c" width="320" height="180"></canvas>
+<script src="../lib.js"></script>
+<script>
+// Logical 320x180 pixel canvas, scaled x6. Poses quantised to 8fps, camera smooth.
+const c = $('c'), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+const PAL = { sky0:'#1B1238', sky1:'#4B1F4E', sky2:'#C2523C', sky3:'#F2A65A', sun:'#FFE08A',
+  sand0:'#E3A857', sand1:'#B9783B', sand2:'#7E4A2A', pyr0:'#F0C27B', pyr1:'#B8824A', ink:'#1A0F1F',
+  jar:'#A8553A', jarD:'#6B2E24', beer:'#F5C04A', foam:'#FFF4D6', white:'#FFF4D6', red:'#E0483E' };
+const px = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
+// Bayer 4x4 dither between two colours for gradient bands
+const BAY = [0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+function band(y0, y1, cA, cB) { for (let y = y0; y < y1; y++) { const k = (y - y0) / (y1 - y0);
+  for (let x = 0; x < 320; x++) px(x, y, 1, 1, k * 16 > BAY[(y & 3) * 4 + (x & 3)] ? cB : cA); } }
+// pixel text: draw with real font on an offscreen canvas, then threshold alpha -> hard pixels
+const off = document.createElement('canvas'); off.width = 320; off.height = 40; const og = off.getContext('2d');
+function ptext(str, x, y, size, col, shadow) {
+  og.clearRect(0, 0, 320, 40); og.font = `900 ${size}px "Noto Sans SC"`; og.textBaseline = 'top';
+  og.fillStyle = '#fff'; og.fillText(str, 0, 2);
+  const d = og.getImageData(0, 0, 320, 40).data;
+  for (let yy = 0; yy < 40; yy++) for (let xx = 0; xx < 320; xx++) if (d[(yy * 320 + xx) * 4 + 3] > 128) {
+    if (shadow) px(x + xx + 1, y + yy + 1, 1, 1, shadow); }
+  for (let yy = 0; yy < 40; yy++) for (let xx = 0; xx < 320; xx++) if (d[(yy * 320 + xx) * 4 + 3] > 128) px(x + xx, y + yy, 1, 1, col);
+}
+function pyramid(cx, base, h, sh) { for (let i = 0; i < h; i++) { const w = Math.round((h - i) * 1.6);
+  px(cx - w, base - i, w, 1, PAL.pyr0); px(cx, base - i, w, 1, sh); if (i % 4 === 0) px(cx - w, base - i, w * 2, 1, PAL.pyr1); } }
+function worker(x, y, f) { // 8fps two-frame walk, carrying a jar on shoulder
+  const leg = f % 2; px(x + 1, y, 3, 3, PAL.ink); px(x, y + 3, 5, 5, '#E8E0C8'); px(x + 1, y + 3, 3, 1, PAL.ink);
+  px(x + leg, y + 8, 1, 3, PAL.ink); px(x + 4 - leg, y + 8, 1, 3, PAL.ink); px(x + 4, y - 3, 4, 5, PAL.jar); }
+function bigJar(x, y, t, f) { // drinking jar with reed straw, beer bubbles
+  const rows = [6,10,13,15,16,16,16,15,14,12,10,7]; rows.forEach((w, i) => { px(x - w, y + i * 3, w * 2, 3, i < 2 ? PAL.jarD : PAL.jar);
+    px(x - w, y + i * 3, 2, 3, PAL.jarD); });
+  px(x - 6, y - 2, 12, 2, PAL.foam);
+  for (let i = 0; i < 26; i++) px(x + 4 + i, y - 2 - i, 1, 1, '#C9B26A'); // reed straw
+  for (let i = 0; i < 5; i++) { const ph = (f / 8 + rnd(i)) % 1; px(x - 4 + i * 2, y - 2 - ph * 10, 1, 1, PAL.foam); }
+}
+window.render = function (t) {
+  const f = Math.floor(t * 8); // pose clock
+  const cam = easeInOut(t / 4.8) * 12; // slow pan right
+  band(0, 40, PAL.sky0, PAL.sky1); band(40, 80, PAL.sky1, PAL.sky2); band(80, 118, PAL.sky2, PAL.sky3);
+  // sun: chunky circle
+  for (let y = -14; y <= 14; y++) for (let x = -14; x <= 14; x++) if (x * x + y * y < 196) px(250 - cam * .3 + x, 92 + y, 1, 1, PAL.sun);
+  g.save(); g.translate(-Math.round(cam), 0);
+  pyramid(90, 118, 52, PAL.pyr1); pyramid(170, 118, 36, PAL.pyr1); pyramid(230, 118, 22, PAL.pyr1);
+  band(118, 140, PAL.sand0, PAL.sand1); band(140, 180, PAL.sand1, PAL.sand2);
+  for (let i = 0; i < 5; i++) worker(((t * 14 + i * 34) % 200) + 20, 108 + (i % 2), f + i);
+  g.restore();
+  bigJar(268, 132, t, f);
+  // text panel (top-left), pops in by rows on beats
+  const a = t > .3, b = t > 1.2, d = t > 2.4;
+  if (a) { px(10, 10, 112, 18, PAL.ink); ptext('约4500年前·古埃及', 14, 11, 12, PAL.sun); }
+  if (b) ptext('啤酒＝口粮', 12, 34, 30, PAL.white, PAL.ink);
+  if (d) { ptext('每天按份领啤酒', 12, 92, 16, PAL.white, PAL.ink); } if (d) ptext('修金字塔的工人', 12, 72, 16, PAL.white, PAL.ink);
+  // HUD: era counter like a game cartridge
+  px(254, 6, 60, 14, PAL.ink); ptext('LV 03/10', 258, 6, 11, PAL.red);
+  // scanlines
+  g.fillStyle = 'rgba(0,0,0,.18)'; for (let y = 0; y < 180; y += 2) g.fillRect(0, y, 320, 1);
+};
+boot(['900 12px "Noto Sans SC"'], '约4500年前·古埃及啤酒＝口粮修金字塔的工人，每天按份领');
+</script></body></html>

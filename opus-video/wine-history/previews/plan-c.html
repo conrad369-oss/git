@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#24412F; }
+  canvas { position:absolute; inset:0; }
+  .t { position:absolute; white-space:nowrap; }
+  #yr { left:110px; top:70px; font:900 400px/1 "Noto Sans SC";
+        color:transparent; -webkit-text-stroke:4px rgba(255,244,214,.3); font-variant-numeric:tabular-nums; }
+  #cap { left:120px; bottom:200px; font:900 110px/1.05 "Noto Sans SC"; color:#FFF4D6; }
+  #era { left:128px; bottom:340px; font:400 40px "Noto Serif SC"; color:#FFF4D6; letter-spacing:.15em; }
+  #note { left:128px; bottom:120px;
+          font:400 36px/1.5 "Noto Sans SC"; color:rgba(255,244,214,.85); }
+</style></head><body>
+<div class="t" id="yr"></div>
+<canvas id="c" width="1920" height="1080"></canvas>
+<div class="t" id="era"></div><div class="t" id="cap"></div><div class="t" id="note"></div>
+<script src="../lib.js"></script>
+<script>
+// One vessel, defined as a half-width profile w(y), y: 0 bottom -> 1 rim. Morph = lerp of profiles.
+const N = 80;
+const VESSELS = {
+  mug:   y => 0.30 + 0.03 * y,                                                       // monastery beer mug
+  flask: y => y < 0.58 ? Math.sqrt(Math.max(0, 0.29 * 0.29 - (y - 0.29) ** 2)) * 1.25 // alembic flask
+                       : 0.075 + 0.02 * smooth(0.9, 1, y),
+};
+const prof = (name) => Array.from({ length: N + 1 }, (_, i) => VESSELS[name](i / N));
+const A = prof('mug'), B = prof('flask');
+const SCENES = [
+  { t: 0,   bg: '#24412F', yr: '1100', era: '公元 1100 年前后 · 欧洲修道院', cap: '修士酿啤酒', note: '修士们一边祈祷，一边改良酿酒手艺' },
+  { t: 2.4, bg: '#9C4A25', yr: '1300', era: '公元 1300 年前后 · 炼金术士',   cap: '蒸馏出「生命之水」', note: '把酒加热再冷凝，越蒸越烈——烈酒登场' },
+];
+const c = $('c'), g = c.getContext('2d');
+function vessel(cx, base, H, Wd, p, level, t, liq) {
+  const path = () => { g.beginPath(); g.moveTo(cx, base);
+    for (let i = 0; i <= N; i++) g.lineTo(cx + p[i] * Wd, base - i / N * H);
+    for (let i = N; i >= 0; i--) g.lineTo(cx - p[i] * Wd, base - i / N * H); g.closePath(); };
+  // glass body
+  path(); g.fillStyle = 'rgba(255,244,214,.12)'; g.fill();
+  // liquid clipped to body, with a wavy surface
+  g.save(); path(); g.clip(); const ly = base - level * H;
+  g.beginPath(); g.moveTo(cx - Wd, base + 10);
+  for (let x = -Wd; x <= Wd; x += 8) g.lineTo(cx + x, ly + Math.sin(x / 40 + t * 4) * 8);
+  g.lineTo(cx + Wd, base + 10); g.closePath(); g.fillStyle = liq; g.fill();
+  for (let i = 0; i < 18; i++) { const ph = (t * (0.5 + rnd(i) * .5) + rnd(i + 9)) % 1;
+    g.beginPath(); g.arc(cx + (rnd(i + 2) - .5) * Wd * .5, base - ph * level * H, 5 + rnd(i) * 6, 0, 7);
+    g.fillStyle = 'rgba(255,255,255,.45)'; g.fill(); }
+  g.restore();
+  path(); g.lineWidth = 10; g.strokeStyle = '#FFF4D6'; g.lineJoin = 'round'; g.stroke();
+}
+const mix = (c1, c2, k) => { const h = s => [1, 3, 5].map(i => parseInt(s.substr(i, 2), 16));
+  const a = h(c1), b = h(c2); return `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], k))).join(',')})`; };
+window.render = function (t) {
+  const T = 2.4, mk = easeInOut((t - T + 0.3) / 0.9);           // morph straddles the bar line
+  const p = A.map((v, i) => lerp(v, B[i], mk));
+  const S = t < T ? SCENES[0] : SCENES[1];
+  document.body.style.background = mix(SCENES[0].bg, SCENES[1].bg, smooth(T - .2, T + .2, t));
+  g.clearRect(0, 0, 1920, 1080);
+  // camera: gentle push + vessel bob; vessel occupies ~ 60% height
+  const zoom = 1 + 0.05 * easeInOut(t / 4.8), bob = Math.sin(t * 2.6) * 6;
+  g.save(); g.translate(1420, 540); g.scale(zoom, zoom); g.rotate(Math.sin(t * 1.3) * 0.02); g.translate(-1420, -540);
+  vessel(1420, 900 + bob, 660, 620, p, lerp(0.8, 0.45, mk), t, mix('#E9B640', '#F3E3B0', mk));
+  g.restore();
+  // big outline year rolls between scenes
+  const y = Math.round(lerp(1100, 1300, easeInOut((t - T + .3) / .9)));
+  $('yr').textContent = `${y}`;
+  // caption swap: old out, new in, never overlapping
+  const local = t < T ? t : t - T, out = t < T ? smooth(T - .35, T - .05, t) : 0;
+  [['era', .1], ['cap', .25], ['note', .6]].forEach(([id, d]) => {
+    const k = sp(local - d, 'type'); $(id).textContent = S[id];
+    css($(id), { opacity: clamp((local - d) / .15) * (1 - out), transform: `translateY(${(1 - k) * 50 + out * -30}px)` }); });
+};
+boot(['900 40px "Noto Sans SC"', '400 40px "Noto Sans SC"', '400 40px "Noto Serif SC"'], SCENES.map(s => s.era + s.cap + s.note + s.yr).join('') + '公元');
+</script></body></html>
