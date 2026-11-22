@@ -8,6 +8,8 @@
 </style></head><body>
 <canvas id="c" width="1920" height="1080"></canvas>
 <script src="lib.js"></script><script src="sprite.js"></script>
+<!-- optional, local only (not in the repo): generated from source/lyrics.lrc by tools/lrc2js.py -->
+<script src="source/lyrics.js"></script>
 <script>
 const W = 1920, H = 1080, END = 266.5;
 const T_CITY = 108.0, T_WORDS = 165.5, T_MIRROR = 195.7, T_BACK = 234.0, T_END = 237.0;
@@ -281,6 +283,21 @@ function drawMirror(ctx, t) {
     redPixel(ctx, rx, ry, Math.round(lerp(4, 18, k)), 1); }
 }
 
+// ---------- subtitles: small serif, left-aligned on the "ground" strip; each character surfaces like writing ----------
+const LYR = (window.LYRICS || []);
+function subtitles(ctx, t) {
+  let i = -1; for (let k = 0; k < LYR.length; k++) if (LYR[k][0] <= t) i = k; if (i < 0) return;
+  const [t0, text] = LYR[i], next = i + 1 < LYR.length ? LYR[i + 1][0] : t0 + 6, t1 = Math.min(next - .25, t0 + 6.5);
+  const out = smooth(t1 - .45, t1, t); if (out >= 1) return;
+  const ink = t > 176 && t < T_BACK + 1.5;                 // paper / water scenes -> dark ink, otherwise warm light
+  ctx.save(); ctx.font = `400 46px ${SERIF}`; ctx.textBaseline = 'alphabetic';
+  let x = 120; const y = 1022;
+  text.split('').forEach((ch, k) => { const a = clamp((t - t0 - k * .05) / .35) * (1 - out); if (a <= 0) { x += ctx.measureText(ch).width + 8; return; }
+    ctx.fillStyle = ink ? `rgba(46,44,48,${.85 * a})` : `rgba(238,230,216,${.9 * a})`;
+    ctx.fillText(ch, x, y + (1 - a) * 6); x += ctx.measureText(ch).width + 8; });
+  ctx.restore();
+}
+
 // ---------- titles ----------
 function title(ctx, t) { const a = smooth(2, 4, t) * (1 - smooth(10.5, 12.5, t)); if (a <= 0) return;
   ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(232,226,214,.9)'; ctx.font = `400 40px ${SERIF}`;
@@ -294,10 +311,11 @@ window.render = function (t) {
   else if (t < T_BACK) drawMirror(g, t);
   else { drawWindow(g, t, true); if (t < T_END) { drawMirror(bg2, t); g.save(); g.globalAlpha = 1 - easeInOut((t - T_BACK) / (T_END - T_BACK)); g.drawImage(buf, 0, 0); g.restore(); } }
   title(g, t);
+  subtitles(g, t);
   // fades: in from black, act I -> II through black, final fade out
   const blk = Math.max(1 - smooth(0, 3.5, t), smooth(104.5, 107.8, t) * (1 - smooth(108, 110.5, t)), smooth(261, 265.8, t));
   if (blk > 0) { g.fillStyle = `rgba(0,0,0,${blk})`; g.fillRect(0, 0, W, H); }
 };
 prep();
-boot([`400 40px ${SERIF}`, `900 40px ${SERIF}`], '我爱你快乐恐惧猜疑词不达意林忆莲遗憾' + Object.values(CHAINS).flat().join('') + RAINCH.join('') + BUBBLE.join(''));
+boot([`400 40px ${SERIF}`, `900 40px ${SERIF}`], LYR.map(r => r[1]).join('') + '我爱你快乐恐惧猜疑词不达意林忆莲遗憾' + Object.values(CHAINS).flat().join('') + RAINCH.join('') + BUBBLE.join(''));
 </script></body></html>
