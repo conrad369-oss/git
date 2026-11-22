@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#1A1D24; }
+  canvas { position:absolute; inset:0; }
+  #cap { position:absolute; left:120px; top:110px; font:400 34px "Noto Serif SC"; letter-spacing:.5em; color:rgba(240,228,210,.85); }
+</style></head><body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<div id="cap">在 你 的 盲 点 里</div>
+<script src="../lib.js"></script><script src="../sprite.js"></script>
+<script>
+// Plan C "盲点": one long sideways tracking shot through a rainy, crowded street.
+// Everyone is grey. "You" (cool blue) walks right; "I" (the only warm colour) keep pace exactly behind you,
+// inside the blind spot of your field of view. The camera tracks you; the city scrolls by in parallax.
+const c = $('c'), g = c.getContext('2d');
+function person(x, ground, h, col, phase, t) { // walking silhouette, legs swing at 1.6 Hz
+  const sw = Math.sin(t * 2 * Math.PI * .8 + phase) * h * .09, bob = Math.abs(Math.sin(t * 2 * Math.PI * .8 + phase)) * h * .012;
+  const y = ground - bob; g.fillStyle = col; g.strokeStyle = col; g.lineCap = 'round';
+  g.beginPath(); g.arc(x, y - h * .9, h * .07, 0, 7); g.fill();
+  g.beginPath(); g.roundRect(x - h * .1, y - h * .8, h * .2, h * .4, h * .06); g.fill();
+  g.lineWidth = h * .07; g.beginPath(); g.moveTo(x, y - h * .42); g.lineTo(x + sw, y); g.moveTo(x, y - h * .42); g.lineTo(x - sw, y); g.stroke(); }
+function skyline(off, base, hMin, hMax, col, seed, wnd) {
+  g.fillStyle = col; let x = -((off % 2400) + 2400) % 2400 - 200, i = 0;
+  while (x < 2100) { const w = 120 + rnd(seed + i) * 180, h = hMin + rnd(seed + i + 50) * (hMax - hMin);
+    g.fillRect(x, base - h, w - 8, h);
+    if (wnd) for (let yy = base - h + 30; yy < base - 40; yy += 46) for (let xx = x + 18; xx < x + w - 30; xx += 38)
+      if (rnd(xx * 3 + yy) > .62) { g.fillStyle = 'rgba(232,180,110,.35)'; g.fillRect(xx, yy, 14, 20); g.fillStyle = col; }
+    x += w; i++; } }
+window.render = function (t) {
+  const cam = t * 140; // tracking speed (px/s) at the "you" layer
+  const sky = g.createLinearGradient(0, 0, 0, 1080); sky.addColorStop(0, '#2A3140'); sky.addColorStop(1, '#14161C');
+  g.fillStyle = sky; g.fillRect(0, 0, 1920, 1080);
+  skyline(cam * .15, 760, 200, 520, '#232936', 1, false);
+  skyline(cam * .4, 820, 160, 420, '#1C212B', 2, true);
+  // wet street with reflections
+  g.fillStyle = '#121419'; g.fillRect(0, 820, 1920, 260);
+  for (let i = 0; i < 18; i++) { const x = ((rnd(i) * 2400 - cam * .9) % 2400 + 2400) % 2400 - 200;
+    g.fillStyle = `rgba(${rnd(i + 3) > .5 ? '232,163,90' : '110,150,190'},.08)`; g.fillRect(x, 830, 30 + rnd(i + 7) * 60, 240); }
+  // crowd: grey pedestrians at various speeds, some walking left
+  const G = 905;
+  for (let i = 0; i < 16; i++) { const dir = rnd(i + 11) > .35 ? 1 : -1, v = 60 + rnd(i + 13) * 80;
+    const x = ((rnd(i + 17) * 2600 + (dir * v - 140) * t) % 2600 + 2600) % 2600 - 300;
+    person(x, G + rnd(i + 19) * 40, 250 + rnd(i + 23) * 50, `rgba(96,102,114,${.55 + rnd(i) * .3})`, i, t); }
+  // vision cone of "you": dashed wedge pointing forward, blind spot behind
+  const yx = 1100, ix = yx - 210;
+  g.save(); g.setLineDash([14, 14]); g.strokeStyle = 'rgba(150,190,230,.45)'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(yx + 20, G - 300); g.lineTo(yx + 760, G - 520); g.moveTo(yx + 20, G - 300); g.lineTo(yx + 760, G - 60); g.stroke();
+  g.fillStyle = 'rgba(150,190,230,.06)'; g.beginPath(); g.moveTo(yx + 20, G - 300); g.lineTo(yx + 760, G - 520); g.lineTo(yx + 760, G - 60); g.fill(); g.restore();
+  person(yx, G + 10, 330, '#7FA7CF', 0, t);
+  // "I": warm, smaller, glowing, exactly in step behind
+  drawSprite(g, walkPose(t), ix + 60, G + 10, 12, '#F0AA5A', '#2A1E14', false, 40);
+  // rain streaks
+  g.strokeStyle = 'rgba(200,210,225,.28)'; g.lineWidth = 2;
+  for (let i = 0; i < 160; i++) { const x = rnd(i + 700) * 2000, y = ((rnd(i + 800) * 1100 + t * 1400) % 1100) - 40;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x - 10, y + 36); g.stroke(); }
+};
+boot(['400 40px "Noto Serif SC"'], '在你的盲点里');
+</script></body></html>

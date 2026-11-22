@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#F2F0EB; color:#111; }
+  .a { position:absolute; white-space:nowrap; }
+  #src { left:150px; top:360px; font:900 220px/1 "Noto Serif SC"; letter-spacing:.04em; }
+  #srcLab, #dstLab { top:300px; font:400 28px "Noto Sans SC"; letter-spacing:.4em; color:#777; }
+  #srcLab { left:158px; } #dstLab { left:1180px; }
+  #dst { left:1170px; top:360px; font:900 220px/1 "Noto Serif SC"; letter-spacing:.04em; }
+  #dst span { display:inline-block; }
+  #wire { left:0; top:0; }
+  #foot { left:150px; bottom:110px; font:400 30px "Noto Sans SC"; letter-spacing:.5em; color:#111; }
+  #foot b { color:#D7263D; font-weight:900; }
+</style></head><body>
+<canvas class="a" id="cv" width="1920" height="1080" style="left:0;top:0"></canvas><svg class="a" id="wire" width="1920" height="1080"><path id="line" fill="none" stroke="#111" stroke-width="3" stroke-dasharray="10 14"/>
+  <circle id="pkt" r="12" fill="#D7263D"/></svg>
+<div class="a" id="srcLab">心 里 的 原 文</div><div class="a" id="src">我爱你</div>
+<div class="a" id="dstLab">说 出 口 的 译 文</div><div class="a" id="dst"><span id="d0"></span><span id="d1"></span><span id="d2"></span></div>
+<div class="a" id="foot">要 如 何 翻 译 <b>我 爱 你</b></div>
+<script src="../lib.js"></script><script src="../sprite.js"></script>
+<script>
+// Plan B "翻译": the words are the protagonists. A packet carries 我爱你 across;
+// on arrival each character degrades through look-alike glyphs (meaning drifts away while the shape stays close).
+const CHAINS = [ ['我', '找', '戎', '伐', '戈', '　'], ['爱', '受', '叆', '暧', '爰', '？'], ['你', '妳', '伱', '尔', '尒', '…'] ];
+window.render = function (t) {
+  const k = easeInOut(t / 1.2);
+  $('line').setAttribute('d', 'M820,470 C980,380 1020,560 1160,470');
+  const L = $('line').getTotalLength(), p = $('line').getPointAtLength(L * clamp(t / 1.0));
+  const cv = $('cv').getContext('2d'); cv.clearRect(0, 0, 1920, 1080);
+  const arrived = t >= 1.0, sx = arrived ? 1160 : p.x, sy = arrived ? 470 : p.y;
+  drawSprite(cv, arrived ? (t > 1.6 ? 'lookup' : 'stand') : walkPose(t), sx, sy - 2, 6, '#F0AA5A', '#2A1E14', false);
+  $('pkt').setAttribute('cx', p.x); $('pkt').setAttribute('cy', p.y - 80); $('pkt').setAttribute('opacity', t < 1.05 ? 1 : 0);
+  CHAINS.forEach((ch, j) => { const el = $('d' + j), lt = t - 1.0 - j * .12;
+    const step = lt < 0 ? -1 : Math.min(ch.length - 1, Math.floor(lt / .32)); // 3 glyph changes per second
+    el.textContent = step < 0 ? '' : ch[step];
+    const pop = sp(lt - step * .32, 'toy');
+    css(el, { transform: `translateY(${(1 - pop) * -30}px) rotate(${(rnd(step * 7 + j) - .5) * 8 * (step > 0 ? 1 : 0)}deg)`,
+      color: step >= 3 ? '#D7263D' : '#111', opacity: step < 0 ? 0 : 1 }); });
+  css($('src'), { transform: `scale(${1 - .03 * k})` });
+};
+boot(['900 40px "Noto Serif SC"', '400 40px "Noto Sans SC"', '900 40px "Noto Sans SC"'],
+  '心里的原文说出口的译文要如何翻译我爱你' + CHAINS.flat().join(''));
+</script></body></html>

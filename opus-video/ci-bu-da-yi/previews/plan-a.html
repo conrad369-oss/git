@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#141C24; }
+  canvas { position:absolute; inset:0; }
+  #title { position:absolute; left:120px; bottom:96px; font:400 30px "Noto Serif SC"; letter-spacing:.6em; color:rgba(232,226,214,.7); }
+</style></head><body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<div id="title">词 不 达 意</div>
+<script src="../lib.js"></script><script src="../sprite.js"></script>
+<script>
+// Plan A "玻璃": one fogged pane fills the frame. Behind it: a blurred cold figure.
+// In front: her warm hand on the glass, a finger-written line that the fog slowly reclaims. Rain outside.
+const c = $('c'), g = c.getContext('2d');
+const fog = document.createElement('canvas'); fog.width = 1920; fog.height = 1080; const f = fog.getContext('2d');
+function figure(ctx, x, y, s, col) { // simple standing silhouette (head + shoulders + body)
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y - 330 * s, 62 * s, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x - 150 * s, y); ctx.bezierCurveTo(x - 160 * s, y - 180 * s, x - 120 * s, y - 250 * s, x, y - 255 * s);
+  ctx.bezierCurveTo(x + 120 * s, y - 250 * s, x + 160 * s, y - 180 * s, x + 150 * s, y); ctx.fill(); }
+function hand(ctx, x, y, s) { // palm + 5 fingers as rounded strokes
+  ctx.lineCap = 'round'; ctx.strokeStyle = ctx.fillStyle; ctx.beginPath(); ctx.ellipse(x, y, 70 * s, 82 * s, 0, 0, 7); ctx.fill();
+  [[-62, -60, -95, -150], [-26, -78, -38, -200], [8, -82, 10, -215], [42, -74, 56, -192], [70, -20, 130, -80]].forEach(([a, b, c2, d]) => {
+    ctx.lineWidth = 34 * s; ctx.beginPath(); ctx.moveTo(x + a * s, y + b * s); ctx.lineTo(x + c2 * s, y + d * s); ctx.stroke(); }); }
+// static layers are pre-rendered once (pure functions of nothing -> safe for any-order rendering)
+const bgL = document.createElement('canvas'); bgL.width = 1920; bgL.height = 1080;
+const figL = document.createElement('canvas'); figL.width = 900; figL.height = 1080;
+const fogBase = document.createElement('canvas'); fogBase.width = 1920; fogBase.height = 1080;
+function prep() {
+  const b = bgL.getContext('2d'), gr = b.createLinearGradient(0, 0, 0, 1080); gr.addColorStop(0, '#1B2733'); gr.addColorStop(1, '#0E141A');
+  b.fillStyle = gr; b.fillRect(0, 0, 1920, 1080); b.filter = 'blur(22px)';
+  for (let i = 0; i < 34; i++) { const x = rnd(i) * 1920, y = 150 + rnd(i + 30) * 600, r = 14 + rnd(i + 60) * 46;
+    b.fillStyle = `rgba(${rnd(i + 5) > .45 ? '232,163,90' : '120,160,200'},${.18 + rnd(i + 9) * .3})`; b.beginPath(); b.arc(x, y, r, 0, 7); b.fill(); }
+  const fg = figL.getContext('2d'); fg.filter = 'blur(10px)'; figure(fg, 450, 1080, 1.55, '#7D93A8');
+  const fb = fogBase.getContext('2d'); fb.fillStyle = 'rgba(196,210,222,.34)'; fb.fillRect(0, 0, 1920, 1080); fb.filter = 'blur(30px)';
+  for (let i = 0; i < 120; i++) { fb.fillStyle = `rgba(230,238,245,${.04 + rnd(i + 200) * .06})`;
+    fb.beginPath(); fb.arc(rnd(i + 100) * 1920, rnd(i + 300) * 1080, 40 + rnd(i + 400) * 120, 0, 7); fb.fill(); }
+}
+const SX = 700, PAW = [SX + 7 * 16 - 6, 930 - 10 * 16 - 10];
+window.render = function (t) {
+  g.drawImage(bgL, 0, 0);
+  g.drawImage(figL, 1240 - 450 + Math.sin(t * .5) * 8, 0);
+  f.globalCompositeOperation = 'source-over'; f.clearRect(0, 0, 1920, 1080); f.drawImage(fogBase, 0, 0);
+  f.globalCompositeOperation = 'destination-out';
+  f.fillStyle = 'rgba(0,0,0,.85)'; for (let k = 0; k < 3; k++) { f.beginPath(); f.arc(PAW[0] + k * 6, PAW[1] - k * 4, 22 - k * 3, 0, 7); f.fill(); } // small paw print where its arm touches
+  f.font = '400 120px "Noto Serif SC"'; f.textBaseline = 'middle';
+  '从何说起'.split('').forEach((ch, k) => { const age = t - k * .5, back = clamp((age - 1.2) / 2.2);
+    if (age < 0) return; f.fillStyle = `rgba(0,0,0,${.9 * (1 - back)})`; f.fillText(ch, 420 + k * 150, 380); });
+  // droplet trails: thin, short, only clear a little fog
+  f.lineCap = 'round';
+  for (let i = 0; i < 16; i++) { const x = rnd(i + 500) * 1920, sp = 30 + rnd(i + 520) * 40, y0 = rnd(i + 540) * 500;
+    const len = 80 + ((t * sp + rnd(i) * 300) % 300); f.lineWidth = 3 + rnd(i + 560) * 2; f.strokeStyle = 'rgba(0,0,0,.55)';
+    f.beginPath(); f.moveTo(x, y0); f.lineTo(x + Math.sin(i) * 4, y0 + len); f.stroke(); }
+  g.drawImage(fog, 0, 0);
+  // droplet heads catch light
+  for (let i = 0; i < 16; i++) { const x = rnd(i + 500) * 1920, sp = 30 + rnd(i + 520) * 40, y0 = rnd(i + 540) * 500;
+    const len = 80 + ((t * sp + rnd(i) * 300) % 300); g.fillStyle = 'rgba(235,240,245,.55)';
+    g.beginPath(); g.arc(x + Math.sin(i) * 4, y0 + len, 5, 0, 7); g.fill(); }
+  // window sill + the creature, warm light spilling on the sill
+  g.fillStyle = '#0B1015'; g.fillRect(0, 930, 1920, 150);
+  const lg = g.createRadialGradient(SX, 930, 10, SX, 930, 420); lg.addColorStop(0, 'rgba(240,170,90,.28)'); lg.addColorStop(1, 'rgba(240,170,90,0)');
+  g.fillStyle = lg; g.fillRect(0, 0, 1920, 1080);
+  drawSprite(g, t % 3 < 2.2 ? 'reach' : 'stand', SX, 930, 16, '#F0AA5A', '#2A1E14', false, 36);
+  const v = g.createRadialGradient(960, 540, 300, 960, 540, 1150); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+  g.fillStyle = v; g.fillRect(0, 0, 1920, 1080);
+};
+prep();
+boot(['400 40px "Noto Serif SC"'], '从何说起词不达意');
+</script></body></html>

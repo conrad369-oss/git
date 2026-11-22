@@ -1,0 +1,7 @@
+source/song.mp3
+source/lyrics.lrc
+source/*.wav
+audio/*.wav
+out/*.mp4
+previous/*.mp4
+previews/*.mp4
