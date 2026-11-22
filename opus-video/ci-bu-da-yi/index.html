@@ -252,9 +252,21 @@ function drawMirror(ctx, t) {
   // a few more words drift down on 遗憾不已 (3:28)
   for (let i = 0; i < 4; i++) { const uu = t - 208.2 - i * .7; if (uu < 0 || uu > 5) continue; const x = 520 + i * 260, y = 80 + uu * 140;
     ctx.fillStyle = `rgba(30,30,34,${.6 * (1 - smooth(3.6, 5, uu))})`; ctx.font = `400 40px ${SERIF}`; ctx.fillText('遗憾不已'[i], x, y); }
+  // single words keep falling, one every ~3.8 s (a bar), each leaves a ring
+  for (let i = 0; i < 8; i++) { const t0 = 200.5 + i * 3.8, uu = t - t0; if (uu < 0 || uu > 7) continue;
+    const x = 300 + rnd(i + 1600) * 1320, fall = Math.min(1, uu / 4.2), y = lerp(-40, WATER, easeInOut(fall)), ch = RAINCH[(i * 5 + 3) % RAINCH.length];
+    if (fall < 1) { ctx.fillStyle = 'rgba(30,30,34,.7)'; ctx.font = `400 46px ${SERIF}`; ctx.fillText(ch, x, y); }
+    const ru = uu - 4.2; if (ru > 0 && ru < 2.8) { ctx.strokeStyle = `rgba(90,100,112,${.55 * (1 - ru / 2.8)})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x + 23, WATER + 30, 20 + ru * 110, 5 + ru * 20, 0, 0, 7); ctx.stroke(); } }
+  // 3:28 遗憾不已: your reflection appears in the water beside its own - nobody stands above it - then dissolves
+  const ghost = smooth(207.5, 211, t) * (1 - smooth(214.5, 218, t));
+  if (ghost > 0) { ctx.save(); ctx.translate(0, WATER * 2); ctx.scale(1, -1); ctx.globalAlpha = .3 * ghost;
+    walker(ctx, 1200 + Math.sin(t * 1.2) * 4, WATER, 290, YOU, 0, t, 0); ctx.restore(); }
   // creature + reflection; slow camera push by integer cell growth
   const cell = 20 + Math.min(4, Math.floor(clamp((t - 200) / 30) * 4)), cx = 960;
   let pose = 'stand', rpose = 'stand';
+  if (t > 203.5 && t < 207) pose = 'lookup';
+  if (t > 209 && t < 214) pose = 'lookdown';
   if (t > 214) pose = 'lookdown';
   if (t > 218.9) rpose = 'reach';           // the reflection moves first
   if (t > 219.9) pose = 'reach';            // then it answers its own reflection

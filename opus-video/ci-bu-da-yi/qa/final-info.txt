@@ -1,0 +1,4 @@
+file: out/final.mp4
+duration: 266.47s  size: 1920x1080  fps: 30.00  audio: yes
+contact sheet: qa/final-sheet.png (5x4, one cell every 13.32s)
+shot changes (0): none detected
