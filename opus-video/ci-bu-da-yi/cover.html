@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>词不达意 · 封面</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  html,body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#000; }
+  canvas { position:absolute; inset:0; }
+</style></head><body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="lib.js"></script><script src="sprite.js"></script>
+<!-- optional, local only (not in the repo): generated from source/lyrics.lrc by tools/lrc2js.py -->
+
+<script>
+const W = 1920, H = 1080, END = 266.5;
+const T_CITY = 108.0, T_WORDS = 165.5, T_MIRROR = 195.7, T_BACK = 234.0, T_END = 237.0;
+const AMBER = '#F0AA5A', EYE = '#2A1E14', RED = '#D7263D', YOU = '#7FA7CF', PAPER = [237, 235, 230];
+const SERIF = '"Noto Serif SC"';
+const c = $('c'), g = c.getContext('2d');
+const mk = (w, h) => { const e = document.createElement('canvas'); e.width = w; e.height = h; return e; };
+const fogC = mk(960, 540), f = fogC.getContext('2d');
+const buf = mk(W, H), bg2 = buf.getContext('2d');
+const bgWin = mk(W, H), figBlur = mk(900, 1080), palmBlur = mk(320, 320), fogBase = mk(960, 540);
+const skyFar = mk(2400, 1080), skyNear = mk(2400, 1080);
+const CHAINS = { '我': ['我', '找', '戎', '伐', '戈'], '爱': ['爱', '受', '叆', '暧', '爰'], '你': ['你', '妳', '伱', '尔', '尒'] };
+const RAINCH = '言语词字说话译爱受叆暧默契桥梁快乐恐惧猜疑我你翻达意'.split('');
+const BUBBLE = ['爱', '受', '叆', '暧', '？', '…'];
+const mixRGB = (a, b, k) => a.map((v, i) => Math.round(lerp(v, b[i], k)));
+const rgb = (a, al = 1) => `rgba(${a[0]},${a[1]},${a[2]},${al})`;
+
+// integrate a speed function deterministically from t0 to t (fixed 1/60 s steps)
+function integ(v, t0, t) { let d = 0; const dt = 1 / 60; for (let x = t0; x < t; x += dt) d += v(Math.min(x, t)) * Math.min(dt, t - x); return d; }
+
+// ---------- shapes ----------
+function figure(ctx, x, y, s, col) {
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y - 330 * s, 62 * s, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x - 150 * s, y); ctx.bezierCurveTo(x - 160 * s, y - 180 * s, x - 120 * s, y - 250 * s, x, y - 255 * s);
+  ctx.bezierCurveTo(x + 120 * s, y - 250 * s, x + 160 * s, y - 180 * s, x + 150 * s, y); ctx.fill(); }
+function walker(ctx, x, ground, h, col, phase, t, moving = 1) {
+  const sw = Math.sin(t * 2 * Math.PI * .8 + phase) * h * .09 * moving, bob = Math.abs(Math.sin(t * 2 * Math.PI * .8 + phase)) * h * .012 * moving;
+  const y = ground - bob; ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(x, y - h * .9, h * .07, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x - h * .1, y - h * .8, h * .2, h * .4, h * .06); ctx.fill();
+  ctx.lineWidth = h * .07; ctx.beginPath(); ctx.moveTo(x, y - h * .42); ctx.lineTo(x + sw, y); ctx.moveTo(x, y - h * .42); ctx.lineTo(x - sw, y); ctx.stroke(); }
+function lamp(ctx, x, y, on) { // tiny pixel desk lamp on the sill
+  const P = 8; const px = (cx, cy, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(x + cx * P, y - cy * P, w * P, h * P); };
+  px(-3, 1, 6, 1, '#3A2E26'); px(0, 9, 1, 8, '#3A2E26'); px(-3, 12, 7, 3, on ? '#FFD38A' : '#4A3E34'); px(-2, 13, 5, 1, on ? '#FFF0C8' : '#4A3E34'); }
+
+function prep() {
+  // night street behind the window (bokeh)
+  const b = bgWin.getContext('2d'), gr = b.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#1B2733'); gr.addColorStop(1, '#0E141A');
+  b.fillStyle = gr; b.fillRect(0, 0, W, H); b.filter = 'blur(22px)';
+  for (let i = 0; i < 38; i++) { const x = rnd(i) * W, y = 120 + rnd(i + 30) * 640, r = 14 + rnd(i + 60) * 46;
+    b.fillStyle = `rgba(${rnd(i + 5) > .45 ? '232,163,90' : '120,160,200'},${.16 + rnd(i + 9) * .3})`; b.beginPath(); b.arc(x, y, r, 0, 7); b.fill(); }
+  const fg = figBlur.getContext('2d'); fg.filter = 'blur(10px)'; figure(fg, 450, 1080, 1.55, '#7D97B0');
+  const pb = palmBlur.getContext('2d'); pb.filter = 'blur(6px)'; pb.fillStyle = '#9DB7CF';
+  pb.beginPath(); pb.ellipse(160, 200, 58, 68, 0, 0, 7); pb.fill(); pb.lineCap = 'round'; pb.strokeStyle = '#9DB7CF';
+  [[-48, -40, -70, -120], [-18, -60, -26, -160], [10, -64, 12, -170], [38, -56, 50, -150], [58, -10, 104, -60]].forEach(([a, bb, cc, d]) => {
+    pb.lineWidth = 26; pb.beginPath(); pb.moveTo(160 + a, 200 + bb); pb.lineTo(160 + cc, 200 + d); pb.stroke(); });
+  const fb = fogBase.getContext('2d'); fb.fillStyle = 'rgba(196,210,222,.34)'; fb.fillRect(0, 0, 960, 540); fb.filter = 'blur(16px)';
+  for (let i = 0; i < 120; i++) { fb.fillStyle = `rgba(230,238,245,${.04 + rnd(i + 200) * .06})`;
+    fb.beginPath(); fb.arc(rnd(i + 100) * 960, rnd(i + 300) * 540, 20 + rnd(i + 400) * 60, 0, 7); fb.fill(); }
+  // city skyline tiles (seamless 2400 px)
+  const tile = (cv, base, hMin, hMax, col, seed, wnd) => { const x2 = cv.getContext('2d'); let x = 0, i = 0;
+    while (x < 2400) { let w = 120 + rnd(seed + i) * 180; if (x + w > 2400) w = 2400 - x; const h = hMin + rnd(seed + i + 50) * (hMax - hMin);
+      x2.fillStyle = col; x2.fillRect(x, base - h, w - 8, h);
+      if (wnd) for (let yy = base - h + 30; yy < base - 40; yy += 46) for (let xx = x + 18; xx < x + w - 30; xx += 38)
+        if (rnd(xx * 3 + yy) > .62) { x2.fillStyle = 'rgba(232,180,110,.38)'; x2.fillRect(xx, yy, 14, 20); }
+      x += w; i++; } };
+  tile(skyFar, 760, 200, 520, '#232936', 1, false); tile(skyNear, 820, 160, 420, '#1C212B', 2, true);
+}
+
+// ---------- fog helpers (fog canvas is half resolution; draw with full-res coordinates) ----------
+function fogStart() { f.setTransform(1, 0, 0, 1, 0, 0); f.globalCompositeOperation = 'source-over'; f.clearRect(0, 0, 960, 540); f.drawImage(fogBase, 0, 0);
+  f.setTransform(.5, 0, 0, .5, 0, 0); f.globalCompositeOperation = 'destination-out'; }
+function wipeChar(ch, x, y, size, prog, alpha) { if (prog <= 0 || alpha <= 0) return;
+  f.save(); f.beginPath(); f.rect(x - 10, y - size * 1.1, (size + 20) * clamp(prog), size * 1.4); f.clip();
+  f.font = `400 ${size}px ${SERIF}`; f.fillStyle = `rgba(0,0,0,${alpha})`; f.fillText(ch, x, y); f.restore(); }
+function wipeDot(x, y, r, a) { f.fillStyle = `rgba(0,0,0,${a})`; f.beginPath(); f.arc(x, y, r, 0, 7); f.fill(); }
+
+// ---------- ACT I + ending: the window ----------
+// writing events: s = glyph, x/y baseline, size, t0 write start, dur writing, hold, back = fog return duration, cx = creature x while writing
+const WR = [
+  { s: '我', x: 380, y: 760, size: 150, t0: 13.4, dur: 1.6, hold: 1.6, back: 3.2, cx: 330 },
+  { s: '爱', x: 560, y: 760, size: 150, t0: 17.6, dur: 1.6, hold: 1.6, back: 3.2, cx: 510 },
+  { s: '你', x: 740, y: 760, size: 150, t0: 21.5, dur: 1.6, hold: 2.4, back: 3.6, cx: 690 },
+  { s: '快乐', x: 300, y: 620, size: 90, t0: 28.7, dur: 1.4, hold: 2.6, back: 4.0, cx: 300 },
+  { s: '恐惧', x: 860, y: 690, size: 90, t0: 31.0, dur: 1.4, hold: 2.6, back: 4.0, cx: 860 },
+  { s: '猜疑', x: 560, y: 560, size: 90, t0: 33.2, dur: 1.4, hold: 3.0, back: 4.0, cx: 560 },
+];
+const BIG = ['我', '爱', '你'].map((s, k) => ({ s, x: 290 + k * 250, y: 640, size: 230, t0: 75.3 + k * .95, dur: .8, cx: 250 + k * 250 }));
+// creature path through act I: [time, x]
+const PATH1 = [[0, 560], [13.0, 560], [13.3, 330], [17.3, 330], [17.6, 510], [21.2, 510], [21.5, 690], [28.2, 690], [28.6, 300], [30.6, 300], [31.0, 860],
+  [32.8, 860], [33.2, 560], [43.6, 560], [46.4, 1060], [74.0, 1060], [75.2, 250], [76.2, 250], [76.25, 500], [77.15, 500], [77.2, 750], [96.0, 750], [100.0, 2150]];
+function pathX(P, t) { for (let i = 0; i < P.length - 1; i++) { const [t0, x0] = P[i], [t1, x1] = P[i + 1];
+    if (t >= t0 && t <= t1) return { x: lerp(x0, x1, easeInOut((t - t0) / Math.max(1e-3, t1 - t0))), moving: x0 !== x1 && t1 - t0 < 6 }; }
+  return { x: P[P.length - 1][1], moving: false }; }
+
+function drawWindow(ctx, t, ending) {
+  // 1. world behind glass: slow parallax push on the background only
+  const push = 1 + .04 * (ending ? (t - T_BACK) / 32 : t / 108);
+  ctx.save(); ctx.translate(960, 540); ctx.scale(push, push); ctx.translate(-960, -540); ctx.drawImage(bgWin, 0, 0); ctx.restore();
+  // the cold figure ("you")
+  let fx = null, fs = 1.55, fa = 1;
+  if (!ending) {
+    if (t > 18 && t < 27.5) { fx = lerp(-500, 2400, (t - 18) / 9.5); fs = .9; fa = .8; }
+    else if (t > 33 && t < 41.5) { fx = lerp(-500, 2400, (t - 33) / 8.5); fs = .9; fa = .8; }
+    else if (t >= 43.7 && t < 100) { fx = t < 46.5 ? lerp(2300, 1340, easeOut((t - 43.7) / 2.8)) : t > 95 ? lerp(1340, 2400, easeInOut((t - 95) / 5)) : 1340; }
+  } else fx = 1340;
+  if (fx !== null) { ctx.save(); ctx.globalAlpha = fa; const w = 900 * fs / 1.55, h = 1080 * fs / 1.55;
+    ctx.drawImage(figBlur, fx - w / 2, 1080 - h + (fs < 1 ? -60 : 0), w, h); ctx.restore(); }
+  if (ending) { const pa = smooth(241.5, 243.5, t); if (pa > 0) { ctx.save(); ctx.globalAlpha = pa * .9; ctx.drawImage(palmBlur, PAWX - 160 + 40, PAWY - 200 + 30); ctx.restore(); } }
+
+  // 2. fog with wipes
+  fogStart();
+  if (!ending) {
+    WR.forEach(w => { const al = .92 * (1 - clamp((t - (w.t0 + w.dur + w.hold)) / w.back)); const chars = w.s.split('');
+      chars.forEach((ch, k) => wipeChar(ch, w.x + k * w.size, w.y, w.size, (t - w.t0 - k * w.dur / chars.length) / (w.dur / chars.length), al)); });
+    // pre-chorus: paw prints on the glass + breath patches
+    if (t > 47 && t < 76) { const a = .85 * smooth(47, 47.4, t) * (1 - smooth(73, 75.5, t)); for (let k = 0; k < 3; k++) wipeDot(1166 + k * 6, 770 - k * 4, 22 - k * 3, a);
+      [52, 59.5, 67].forEach(tb => { const u = t - tb; if (u > 0 && u < 3) wipeDot(1120, 830, 30 + u * 25, .7 * (1 - u / 3)); }); }
+    // chorus 1: big 我爱你, then each glyph drifts through look-alikes while the fog returns, then runs as water
+    BIG.forEach((w, k) => { const step = Math.max(0, Math.min(4, Math.floor((t - 81 - k * .6) / 2.2)));
+      const al = (.92 - .1 * step) * (1 - clamp((t - 90) / 6));
+      wipeChar(CHAINS[w.s][step], w.x, w.y, w.size, (t - w.t0) / w.dur, al);
+      if (t > 89 && t < 99) for (let d = 0; d < 4; d++) { const dl = clamp((t - 89 - d * .5) / 4) * 260; f.lineWidth = 7; f.lineCap = 'round';
+        f.strokeStyle = `rgba(0,0,0,${.7 * (1 - clamp((t - 95) / 4))})`; const xx = w.x + 40 + d * 45; f.beginPath(); f.moveTo(xx, w.y); f.lineTo(xx + Math.sin(d) * 4, w.y + dl); f.stroke(); } });
+  } else {
+    // ending: paw print + last line 词不达意 in the last clear patch
+    const a = .85 * smooth(240.8, 241.2, t); for (let k = 0; k < 3; k++) wipeDot(PAWX + k * 6, PAWY - k * 4, 22 - k * 3, a);
+    '词不达意'.split('').forEach((ch, k) => wipeChar(ch, 820 + k * 70, 600, 64, (t - 248.7 - k * .45) / .45, .9));
+  }
+  // droplet trails (always)
+  f.lineCap = 'round';
+  for (let i = 0; i < 16; i++) { const x = rnd(i + 500) * W, sp2 = 30 + rnd(i + 520) * 40, y0 = rnd(i + 540) * 500, len = 80 + ((t * sp2 + rnd(i) * 300) % 300);
+    f.lineWidth = 4; f.strokeStyle = 'rgba(0,0,0,.5)'; f.beginPath(); f.moveTo(x, y0); f.lineTo(x + Math.sin(i) * 4, y0 + len); f.stroke(); }
+  // ending: fog rises back from the bottom and covers everything (except it is painted after the wipes)
+  if (ending) { const rise = easeInOut((t - 244) / 13); if (rise > 0) { f.globalCompositeOperation = 'source-over'; f.setTransform(1, 0, 0, 1, 0, 0);
+      const top = 540 - rise * 600; const gr2 = f.createLinearGradient(0, top, 0, top + 120); gr2.addColorStop(0, 'rgba(205,216,226,0)'); gr2.addColorStop(1, 'rgba(205,216,226,.9)');
+      f.fillStyle = gr2; f.fillRect(0, top, 960, 540 - top + 10); } }
+  ctx.drawImage(fogC, 0, 0, W, H);
+  for (let i = 0; i < 16; i++) { const x = rnd(i + 500) * W, sp2 = 30 + rnd(i + 520) * 40, y0 = rnd(i + 540) * 500, len = 80 + ((t * sp2 + rnd(i) * 300) % 300);
+    ctx.fillStyle = 'rgba(235,240,245,.5)'; ctx.beginPath(); ctx.arc(x + Math.sin(i) * 4, y0 + len, 5, 0, 7); ctx.fill(); }
+
+  // 3. sill, lamp light, creature
+  const lampOn = ending ? t < 258 || (t < 258.6 && Math.floor(t * 20) % 2) : t > 6.0 || (t > 5.6 && Math.floor(t * 20) % 2 === 0);
+  ctx.fillStyle = '#0B1015'; ctx.fillRect(0, 930, W, 150);
+  if (lampOn) { const lg = ctx.createRadialGradient(260, 860, 10, 260, 860, 620); lg.addColorStop(0, 'rgba(240,170,90,.30)'); lg.addColorStop(1, 'rgba(240,170,90,0)');
+    ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H); }
+  lamp(ctx, 220, 930, lampOn);
+  let cr = null;
+  if (!ending) {
+    const p = pathX(PATH1, t); let pose = p.moving ? walkPose(t) : 'stand', hop = 0;
+    if (t < 9.9) pose = 'sleep'; else if (t < 10.6) pose = 'sit';
+    WR.forEach(w => { if (t > w.t0 - .1 && t < w.t0 + w.dur + .2) pose = 'reach'; });
+    if (t > 47 && t < 74 && (t - 47) % 7 < 4.5) pose = 'reach';
+    BIG.forEach(w => { const u = t - w.t0; if (u > -.1 && u < w.dur + .2) { pose = 'reach'; hop = Math.sin(clamp(u / (w.dur + .2)) * Math.PI) * 120; } });
+    if (t > 90 && t < 96) pose = 'lookup';
+    cr = { x: p.x, y: 930 - hop, pose };
+  } else {
+    cr = { x: 1060, y: 930, pose: t > 240.6 ? 'reach' : t > 238.5 ? 'lookup' : 'stand' };
+  }
+  if (cr.x < 2100) drawSprite(ctx, cr.pose, cr.x, cr.y, 16, AMBER, EYE, false, lampOn ? 34 : 14);
+  // red pixel arriving at the glass in the ending
+  if (ending) { const k = easeInOut((t - T_BACK) / 6.5), rx = lerp(1300, PAWX - 30, k), ry = lerp(308, PAWY - 120, k) + Math.sin(t * 2) * 6;
+    const al = 1 - smooth(262, 265.5, t); redPixel(ctx, rx, ry, 18, al); }
+}
+const PAWX = 1060 + 7 * 16 - 6, PAWY = 930 - 10 * 16 - 10;
+function redPixel(ctx, x, y, s, al) { if (al <= 0) return; ctx.save(); ctx.globalAlpha = al; ctx.shadowColor = 'rgba(215,38,61,.9)'; ctx.shadowBlur = 40;
+  ctx.fillStyle = RED; ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s); ctx.restore(); }
+
+// ---------- ACT II + III: the city, the season wheel, the rain of words ----------
+const SEASONS = [ // [start, top, bottom, kind]
+  [108.0, [42, 49, 64], [20, 22, 28], 'rain'], [115.6, [70, 56, 80], [30, 26, 38], 'clear'], [123.2, [64, 48, 42], [28, 22, 20], 'leaves'],
+  [130.8, [70, 78, 92], [40, 44, 52], 'snow'], [139.4, [42, 49, 64], [20, 22, 28], 'rain'] ];
+const camV = t => { let v = 120; v *= 1 - smooth(138, 139.5, t) + smooth(150, 151.5, t); if (t > 151.5) v = 120; v *= 1 - smooth(176, 186, t); return v; };
+const fallV = t => lerp(1400, 260, smooth(166, 180, t)) * (1 - smooth(189, 194, t));
+function season(t) { let i = 0; while (i < SEASONS.length - 1 && t >= SEASONS[i + 1][0]) i++;
+  const cur = SEASONS[i], prev = SEASONS[Math.max(0, i - 1)], k = i ? smooth(cur[0], cur[0] + 1.5, t) : 1;
+  return { top: mixRGB(prev[1], cur[1], k), bot: mixRGB(prev[2], cur[2], k), kind: cur[3], prevKind: prev[3], k }; }
+const G = 905;
+function drawCity(ctx, t) {
+  const cam = integ(camV, T_CITY, t), paper = smooth(171, 190, t), S = season(t);
+  const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, rgb(S.top)); sky.addColorStop(1, rgb(S.bot));
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  const tileAt = (img, off) => { const o = ((off % 2400) + 2400) % 2400; ctx.drawImage(img, -o, 0); ctx.drawImage(img, 2400 - o, 0); };
+  tileAt(skyFar, cam * .15); tileAt(skyNear, cam * .4);
+  ctx.fillStyle = S.kind === 'snow' ? `rgba(70,74,84,${.6 + .4 * S.k})` : '#121419'; ctx.fillRect(0, 820, W, 260);
+  for (let i = 0; i < 18; i++) { const x = ((rnd(i) * 2400 - cam * .9) % 2400 + 2400) % 2400 - 200;
+    ctx.fillStyle = `rgba(${rnd(i + 3) > .5 ? '232,163,90' : '110,150,190'},.08)`; ctx.fillRect(x, 830, 30 + rnd(i + 7) * 60, 240); }
+  // crowd (people fade out one by one during the interlude)
+  const moving = camV(t) > 20 ? 1 : camV(t) / 20;
+  for (let i = 0; i < 18; i++) { const dir = rnd(i + 11) > .35 ? 1 : -1, v = 60 + rnd(i + 13) * 80;
+    const x = ((rnd(i + 17) * 2600 + dir * v * (t - T_CITY) - cam) % 2600 + 2600) % 2600 - 300;
+    const al = (.55 + rnd(i) * .3) * (1 - smooth(166 + i * .9, 168 + i * .9, t));
+    if (al > .01) walker(ctx, x, G + rnd(i + 19) * 40, 250 + rnd(i + 23) * 50, `rgba(96,102,114,${al})`, i, t, 1); }
+  // paper wash over the world (everything behind the two characters dissolves)
+  if (paper > 0) { ctx.fillStyle = rgb(PAPER, paper); ctx.fillRect(0, 0, W, H); }
+  // "you" + vision cone; you walk away and fade during the interlude
+  const yx = 1100 + lerp(0, 1300, easeInOut((t - 177) / 9)), ya = 1 - smooth(182, 187, t), youMoving = (camV(t) > 20 || (t > 177 && t < 186)) ? 1 : 0;
+  if (ya > 0) { ctx.save(); ctx.globalAlpha = ya; ctx.setLineDash([14, 14]); ctx.strokeStyle = 'rgba(150,190,230,.45)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(yx + 20, G - 300); ctx.lineTo(yx + 760, G - 520); ctx.moveTo(yx + 20, G - 300); ctx.lineTo(yx + 760, G - 60); ctx.stroke();
+    ctx.fillStyle = 'rgba(150,190,230,.06)'; ctx.beginPath(); ctx.moveTo(yx + 20, G - 300); ctx.lineTo(yx + 760, G - 520); ctx.lineTo(yx + 760, G - 60); ctx.fill();
+    ctx.setLineDash([]); walker(ctx, yx, G + 10, 330, YOU, 0, t, youMoving); ctx.restore(); }
+  // weather particles (rain turns into falling words in the interlude)
+  const D = integ(fallV, T_CITY, t), words = smooth(166, 180, t);
+  const kinds = [[S.kind, S.k], [S.prevKind, 1 - S.k]];
+  kinds.forEach(([kind, w]) => { if (w <= .01) return;
+    if (kind === 'rain') { for (let i = 0; i < 150; i++) { const isWord = rnd(i + 900) < words; const x = rnd(i + 700) * 2000 - 40, y = ((rnd(i + 800) * 1180 + D) % 1180) - 80;
+        if (isWord) { if (i % 3) continue; const wf = 1 - smooth(187, 192, t); ctx.fillStyle = paper > .5 ? `rgba(30,30,34,${.75 * w * wf})` : `rgba(220,226,235,${.7 * w * wf})`;
+          ctx.font = `400 ${30 + rnd(i) * 26}px ${SERIF}`; ctx.fillText(RAINCH[i % RAINCH.length], x, y);
+          if (y > G - 20 && y < G + 60) { for (let q = 0; q < 3; q++) ctx.fillRect(x + q * 14 - 10 + (y - G) * (q - 1) * .6, G + 10 - (y - G) * .3, 6, 6); } }
+        else { ctx.strokeStyle = `rgba(200,210,225,${.28 * w * (1 - words)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 10, y + 36); ctx.stroke(); } } }
+    if (kind === 'leaves') for (let i = 0; i < 40; i++) { const x = ((rnd(i + 30) * 2100 + Math.sin(t * .9 + i) * 60 - (t - 120) * 40) % 2100 + 2100) % 2100 - 90, y = ((rnd(i + 40) * 1100 + (t - 120) * (60 + rnd(i) * 40)) % 1100);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(t * 2 + i); ctx.fillStyle = `rgba(${200 + rnd(i) * 40 | 0},${110 + rnd(i + 1) * 50 | 0},50,${.85 * w})`; ctx.fillRect(-9, -6, 18, 12); ctx.restore(); }
+    if (kind === 'snow') for (let i = 0; i < 120; i++) { const x = ((rnd(i + 60) * 2000 + Math.sin(t + i) * 30) % 2000), y = ((rnd(i + 70) * 1100 + (t - 130) * (50 + rnd(i) * 40)) % 1100);
+      ctx.fillStyle = `rgba(240,244,250,${.8 * w})`; ctx.beginPath(); ctx.arc(x, y, 2 + rnd(i + 5) * 4, 0, 7); ctx.fill(); }
+  });
+  // frozen words that stay in the air at the end of the interlude
+  if (t > 186) { const fa = smooth(186, 190, t); for (let i = 0; i < FROZEN.length; i++) { const [x, y, s, ch] = FROZEN[i]; ctx.fillStyle = `rgba(30,30,34,${.75 * fa})`;
+      ctx.font = `400 ${s}px ${SERIF}`; ctx.fillText(ch, x, y + Math.sin(t * .8 + i) * 4); } }
+  // the creature: follows behind you; in the chorus it jumps and shouts bubbles; at the end it walks to centre and the camera "pixel zooms"
+  let cx = 890, cy = G + 10, cell = 12, pose = moving > .5 ? walkPose(t) : 'stand', hop = 0;
+  if (t > 186) { cx = lerp(890, 960, easeInOut((t - 186) / 3)); pose = t < 189 ? walkPose(t) : 'stand';
+    cell = 12 + Math.min(8, Math.floor(clamp((t - 188) / 7.5) * 8)); cy = lerp(G + 10, 760, easeInOut((t - 188) / 7.5)); }
+  BUB_T.forEach(bt => { const u = t - bt; if (u > 0 && u < .7) hop = Math.sin(u / .7 * Math.PI) * 90; });
+  drawSprite(ctx, pose, cx, cy - hop, cell, AMBER, EYE, false, paper > .5 ? 0 : 36);
+  BUB_T.forEach((bt, bi) => { const u = t - bt; if (u < 0 || u > 3.6) return;
+    const step = Math.min(BUBBLE.length - 1, Math.floor(u / .5)), pop = clamp((u - 3.1) / .5), bx = cx + 40, by = cy - hop - 230;
+    if (pop < 1) { ctx.save(); ctx.globalAlpha = 1 - pop; ctx.fillStyle = '#F2EEE6'; ctx.fillRect(bx, by - 96, 132, 108); ctx.fillRect(bx + 12, by + 12, 24, 24);
+      ctx.fillStyle = step >= 2 ? RED : '#1A1A1A'; ctx.font = `900 84px ${SERIF}`; ctx.fillText(bi === BUB_T.length - 1 ? '…' : BUBBLE[step], bx + 24, by - 14); ctx.restore(); }
+    if (pop > 0) for (let q = 0; q < 14; q++) { const a = rnd(q + bi * 20) * 7, r = pop * (60 + rnd(q + 3) * 120);
+      ctx.fillStyle = `rgba(242,238,230,${1 - pop})`; ctx.fillRect(bx + 66 + Math.cos(a) * r, by - 40 + Math.sin(a) * r, 12, 12); } });
+}
+const BUB_T = [140.0, 147.1, 154.6, 162.75];
+// the words that freeze in the air (positions shared with act IV so the hand-off is continuous)
+const FROZEN = Array.from({ length: 34 }, (_, i) => [80 + rnd(i + 1200) * 1760, 120 + rnd(i + 1300) * 560, 30 + rnd(i + 1400) * 30, RAINCH[(i * 7) % RAINCH.length]]);
+
+// ---------- ACT IV: the mirror ----------
+const WATER = 760;
+function drawMirror(ctx, t) {
+  const u = t - T_MIRROR;
+  ctx.fillStyle = rgb(PAPER); ctx.fillRect(0, 0, W, H);
+  // water: slightly cooler below the line, faint horizontal light strokes
+  const wa = smooth(T_MIRROR, T_MIRROR + 1.2, t);
+  ctx.fillStyle = `rgba(214,220,226,${wa})`; ctx.fillRect(0, WATER, W, H - WATER);
+  ctx.strokeStyle = `rgba(255,255,255,${.7 * wa})`; ctx.lineWidth = 3;
+  for (let i = 0; i < 14; i++) { const y = WATER + 20 + rnd(i + 50) * 290, x = ((rnd(i + 60) * 2200 + t * (10 + rnd(i) * 10)) % 2200) - 200; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 80 + rnd(i) * 200, y); ctx.stroke(); }
+  // frozen words fall into the water and leave rings
+  FROZEN.forEach(([x, y, s, ch], i) => { const delay = rnd(i + 1500) * 1.6, uu = u - delay; let yy = y; if (uu > 0) yy = y + 900 * uu * uu;
+    const hitT = uu > 0 ? Math.sqrt(Math.max(0, (WATER - y) / 900)) : 9;
+    if (yy < WATER) { ctx.fillStyle = 'rgba(30,30,34,.75)'; ctx.font = `400 ${s}px ${SERIF}`; ctx.fillText(ch, x, yy + (uu <= 0 ? Math.sin(t * .8 + i) * 4 : 0)); }
+    const ru = uu - hitT; if (ru > 0 && ru < 3) { ctx.strokeStyle = `rgba(90,100,112,${.5 * (1 - ru / 3)})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x + s / 2, WATER + 40 + rnd(i) * 120, 20 + ru * 90, 5 + ru * 18, 0, 0, 7); ctx.stroke(); } });
+  // a few more words drift down on 遗憾不已 (3:28)
+  for (let i = 0; i < 4; i++) { const uu = t - 208.2 - i * .7; if (uu < 0 || uu > 5) continue; const x = 520 + i * 260, y = 80 + uu * 140;
+    ctx.fillStyle = `rgba(30,30,34,${.6 * (1 - smooth(3.6, 5, uu))})`; ctx.font = `400 40px ${SERIF}`; ctx.fillText('遗憾不已'[i], x, y); }
+  // single words keep falling, one every ~3.8 s (a bar), each leaves a ring
+  for (let i = 0; i < 8; i++) { const t0 = 200.5 + i * 3.8, uu = t - t0; if (uu < 0 || uu > 7) continue;
+    const x = 300 + rnd(i + 1600) * 1320, fall = Math.min(1, uu / 4.2), y = lerp(-40, WATER, easeInOut(fall)), ch = RAINCH[(i * 5 + 3) % RAINCH.length];
+    if (fall < 1) { ctx.fillStyle = 'rgba(30,30,34,.7)'; ctx.font = `400 46px ${SERIF}`; ctx.fillText(ch, x, y); }
+    const ru = uu - 4.2; if (ru > 0 && ru < 2.8) { ctx.strokeStyle = `rgba(90,100,112,${.55 * (1 - ru / 2.8)})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x + 23, WATER + 30, 20 + ru * 110, 5 + ru * 20, 0, 0, 7); ctx.stroke(); } }
+  // 3:28 遗憾不已: your reflection appears in the water beside its own - nobody stands above it - then dissolves
+  const ghost = smooth(207.5, 211, t) * (1 - smooth(214.5, 218, t));
+  if (ghost > 0) { ctx.save(); ctx.translate(0, WATER * 2); ctx.scale(1, -1); ctx.globalAlpha = .3 * ghost;
+    walker(ctx, 1200 + Math.sin(t * 1.2) * 4, WATER, 290, YOU, 0, t, 0); ctx.restore(); }
+  // creature + reflection; slow camera push by integer cell growth
+  const cell = 20 + Math.min(4, Math.floor(clamp((t - 200) / 30) * 4)), cx = 960;
+  let pose = 'stand', rpose = 'stand';
+  if (t > 203.5 && t < 207) pose = 'lookup';
+  if (t > 209 && t < 214) pose = 'lookdown';
+  if (t > 214) pose = 'lookdown';
+  if (t > 218.9) rpose = 'reach';           // the reflection moves first
+  if (t > 219.9) pose = 'reach';            // then it answers its own reflection
+  if (t > 224) { pose = 'lookdown'; rpose = 'stand'; }
+  if (t > 228.1) pose = 'lookup';
+  ctx.save(); ctx.translate(0, WATER * 2); ctx.scale(1, -1); ctx.globalAlpha = .38 * wa;
+  drawSprite(ctx, rpose, cx + Math.sin(t * 1.4) * 3, WATER, cell, AMBER, EYE, false); ctx.restore();
+  drawSprite(ctx, pose, cx, WATER, cell, AMBER, EYE, false, 0);
+  // 3:48 a red pixel lights up in its chest, floats out, drifts right
+  if (t > 228.1) { const k = clamp((t - 228.1) / 1.2), up = easeInOut((t - 229.6) / 2.4), right = easeInOut((t - 231.5) / 4);
+    const rx = cx + right * 340, ry = WATER - 5.5 * cell - up * 260 - right * 60;
+    redPixel(ctx, rx, ry, Math.round(lerp(4, 18, k)), 1); }
+}
+
+// ---------- subtitles: small serif, left-aligned on the "ground" strip; each character surfaces like writing ----------
+const LYR = (window.LYRICS || []);
+function subtitles(ctx, t) {
+  let i = -1; for (let k = 0; k < LYR.length; k++) if (LYR[k][0] <= t) i = k; if (i < 0) return;
+  const [t0, text] = LYR[i], next = i + 1 < LYR.length ? LYR[i + 1][0] : t0 + 6, t1 = Math.min(next - .25, t0 + 6.5);
+  const out = smooth(t1 - .45, t1, t); if (out >= 1) return;
+  const ink = t > 176 && t < T_BACK + 1.5;                 // paper / water scenes -> dark ink, otherwise warm light
+  ctx.save(); ctx.font = `400 46px ${SERIF}`; ctx.textBaseline = 'alphabetic';
+  let x = 120; const y = 1022;
+  text.split('').forEach((ch, k) => { const a = clamp((t - t0 - k * .05) / .35) * (1 - out); if (a <= 0) { x += ctx.measureText(ch).width + 8; return; }
+    ctx.fillStyle = ink ? `rgba(46,44,48,${.85 * a})` : `rgba(238,230,216,${.9 * a})`;
+    ctx.fillText(ch, x, y + (1 - a) * 6); x += ctx.measureText(ch).width + 8; });
+  ctx.restore();
+}
+
+// ---------- titles ----------
+function title(ctx, t) { const a = smooth(2, 4, t) * (1 - smooth(10.5, 12.5, t)); if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(232,226,214,.9)'; ctx.font = `400 40px ${SERIF}`;
+  '词不达意'.split('').forEach((ch, k) => ctx.fillText(ch, 120 + k * 76, 1010)); ctx.font = `400 22px ${SERIF}`; ctx.fillStyle = 'rgba(232,226,214,.6)';
+  ctx.fillText('林 忆 莲  ·  2006', 124, 1050); ctx.restore(); }
+
+const SQ = location.search.includes('sq');
+function coverTitle(ctx) {
+  const x0 = SQ ? 760 : 130, y0 = SQ ? 250 : 330;
+  ctx.save(); ctx.fillStyle = 'rgba(244,238,226,.95)'; ctx.shadowColor = 'rgba(10,16,22,.35)'; ctx.shadowBlur = 24;
+  ctx.font = `400 ${SQ ? 104 : 132}px ${SERIF}`;
+  '词不达意'.split('').forEach((ch, k) => ctx.fillText(ch, x0 + k * (SQ ? 150 : 190), y0));
+  ctx.shadowBlur = 0; ctx.font = `400 ${SQ ? 30 : 34}px ${SERIF}`; ctx.fillStyle = 'rgba(244,238,226,.72)';
+  const sub = '林 忆 莲   ·   M V'; ctx.fillText(sub, x0 + 6, y0 + (SQ ? 74 : 92));
+  ctx.restore(); }
+window.render = function (t) {
+  t = clamp(t, 0, END - 1e-3);
+  if (t < T_CITY) drawWindow(g, t, false);
+  else if (t < T_MIRROR) drawCity(g, t);
+  else if (t < T_BACK) drawMirror(g, t);
+  else { drawWindow(g, t, true); if (t < T_END) { drawMirror(bg2, t); g.save(); g.globalAlpha = 1 - easeInOut((t - T_BACK) / (T_END - T_BACK)); g.drawImage(buf, 0, 0); g.restore(); } }
+  coverTitle(g);
+  // fades: in from black, act I -> II through black, final fade out
+  const blk = Math.max(1 - smooth(0, 3.5, t), smooth(104.5, 107.8, t) * (1 - smooth(108, 110.5, t)), smooth(261, 265.8, t));
+  if (blk > 0) { g.fillStyle = `rgba(0,0,0,${blk})`; g.fillRect(0, 0, W, H); }
+};
+prep();
+boot([`400 40px ${SERIF}`, `900 40px ${SERIF}`], LYR.map(r => r[1]).join('') + '我爱你快乐恐惧猜疑词不达意林忆莲遗憾' + Object.values(CHAINS).flat().join('') + RAINCH.join('') + BUBBLE.join(''));
+</script></body></html>
